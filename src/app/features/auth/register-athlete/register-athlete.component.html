@@ -1,0 +1,332 @@
+<div class="auth-wrapper">
+  <div class="register-card">
+    <header class="auth-header text-center">
+      <div class="brand-badge-container">
+        <app-brand-logo size="md"></app-brand-logo>
+      </div>
+      <div class="badge-athlete">CÉDULA DE ATLETA TITULAR (MAYOR DE EDAD)</div>
+      <h1 class="auth-title">Regístrate como Futbolista</h1>
+      <p class="auth-subtitle">
+        Gestiona tu propio perfil deportivo, sube tus mejores jugadas y conéctate con scouts profesionales.
+      </p>
+
+      <!-- Stepper Visual de Progreso -->
+      <div class="stepper-track">
+        <div class="step-pill" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+          <span class="step-num">1</span>
+          <span class="step-text">Cuenta & Mayoría de Edad</span>
+        </div>
+        <div class="step-divider"></div>
+        <div class="step-pill" [class.active]="currentStep === 2">
+          <span class="step-num">2</span>
+          <span class="step-text">Ficha Deportiva</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ALERTA DE ERROR GENERAL -->
+    <div *ngIf="errorMessage" class="error-banner" role="alert">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text">{{ errorMessage }}</span>
+    </div>
+
+    <!-- PASO 1: CUENTA Y VALIDACIÓN DE EDAD -->
+    <form *ngIf="currentStep === 1" [formGroup]="accountForm" (ngSubmit)="goToStep2()" class="auth-form" novalidate>
+      <div class="form-group">
+        <label for="fullName">Nombre Completo *</label>
+        <input
+          id="fullName"
+          type="text"
+          formControlName="fullName"
+          class="form-control"
+          placeholder="Ej. Alejandro José Silva Gómez"
+          [class.is-invalid]="accountForm.get('fullName')?.touched && accountForm.get('fullName')?.invalid"
+        />
+        <span class="field-error" *ngIf="accountForm.get('fullName')?.touched && accountForm.get('fullName')?.invalid">
+          El nombre completo es obligatorio (máx 150 caracteres).
+        </span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label for="email">Correo Electrónico *</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="form-control"
+            placeholder="tu.correo@ejemplo.com"
+            [class.is-invalid]="accountForm.get('email')?.touched && accountForm.get('email')?.invalid"
+          />
+          <span class="field-error" *ngIf="accountForm.get('email')?.touched && accountForm.get('email')?.invalid">
+            Ingresa un correo electrónico válido.
+          </span>
+        </div>
+
+        <div class="form-group col-half">
+          <label for="phoneNumber">Número Telefónico / WhatsApp *</label>
+          <input
+            id="phoneNumber"
+            type="tel"
+            formControlName="phoneNumber"
+            class="form-control"
+            placeholder="+58 412 1234567"
+            [class.is-invalid]="accountForm.get('phoneNumber')?.touched && accountForm.get('phoneNumber')?.invalid"
+          />
+          <span class="field-error" *ngIf="accountForm.get('phoneNumber')?.touched && accountForm.get('phoneNumber')?.invalid">
+            Número telefónico requerido.
+          </span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label for="password">Contraseña (Mínimo 8 caracteres) *</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            class="form-control"
+            placeholder="••••••••"
+            [class.is-invalid]="accountForm.get('password')?.touched && accountForm.get('password')?.invalid"
+          />
+          <span class="field-error" *ngIf="accountForm.get('password')?.touched && accountForm.get('password')?.invalid">
+            La contraseña debe tener al menos 8 caracteres.
+          </span>
+        </div>
+
+        <div class="form-group col-half">
+          <label for="birthDate">Fecha de Nacimiento *</label>
+          <input
+            id="birthDate"
+            type="date"
+            formControlName="birthDate"
+            class="form-control"
+            (change)="onBirthDateChange()"
+            [class.is-invalid]="accountForm.get('birthDate')?.touched && accountForm.get('birthDate')?.invalid"
+          />
+          <span class="field-error" *ngIf="accountForm.get('birthDate')?.touched && accountForm.get('birthDate')?.invalid">
+            Fecha de nacimiento requerida.
+          </span>
+        </div>
+      </div>
+
+      <!-- BADGE / ALERTA DE EDAD DINÁMICA -->
+      <div *ngIf="calculatedAge !== null" class="age-feedback-container">
+        <!-- CASO MAYOR DE EDAD (>= 18) -->
+        <div *ngIf="!isUnderage" class="age-success-pill">
+          <span class="pill-icon">✓</span>
+          <span>Edad calculada: <strong>{{ calculatedAge }} años</strong> — Habilitado para registro autónomo de atleta.</span>
+        </div>
+
+        <!-- CASO MENOR DE EDAD (< 18) -> BLOQUEO LOPNNA ART. 65 -->
+        <div *ngIf="isUnderage" class="underage-lopnna-card">
+          <div class="underage-header">
+            <span class="underage-icon">🚫</span>
+            <div>
+              <h4 class="underage-title">Registro Restringido por Ley (LOPNNA)</h4>
+              <p class="underage-desc">
+                Tienes <strong>{{ calculatedAge }} años</strong>. Conforme al Artículo 65 de la Ley Orgánica para la Protección de Niños, Niñas y Adolescentes (LOPNNA), los futbolistas menores de edad deben ser registrados y representados obligatoriamente por su padre, madre o tutor legal.
+              </p>
+            </div>
+          </div>
+          <div class="underage-action">
+            <a routerLink="/register-tutor" class="btn btn-warning-pill">
+              Ir al Registro de Representante / Tutor Legal →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECKBOXES LEGALES -->
+      <div class="legal-consents-container" *ngIf="!isUnderage">
+        <label class="consent-checkbox">
+          <input type="checkbox" formControlName="acceptTerms" />
+          <span class="checkbox-label">
+            He leído y acepto los <a type="button" class="legal-link" (click)="openTermsModal(); $event.preventDefault()">Términos y Condiciones Oficiales de Talentus Scout</a>.
+          </span>
+        </label>
+
+        <label class="consent-checkbox">
+          <input type="checkbox" formControlName="acceptInstitutionalDiffusion" />
+          <span class="checkbox-label">
+            Autorizo expresamente la <strong>cláusula de difusión institucional y cesión de imagen deportiva</strong> para la visibilidad de mi perfil ante scouts y clubes oficiales.
+          </span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary btn-block btn-lg"
+          [disabled]="accountForm.invalid || isUnderage || calculatedAge === null"
+        >
+          Continuar a Ficha Deportiva (Paso 2) →
+        </button>
+      </div>
+    </form>
+
+    <!-- PASO 2: FICHA DEPORTIVA -->
+    <form *ngIf="currentStep === 2" [formGroup]="sportsForm" (ngSubmit)="onSubmit()" class="auth-form" novalidate>
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label for="primaryPosition">Posición Principal *</label>
+          <select id="primaryPosition" formControlName="primaryPosition" class="form-control">
+            <option *ngFor="let pos of positions" [value]="pos.value">{{ pos.label }}</option>
+          </select>
+        </div>
+
+        <div class="form-group col-half">
+          <label for="secondaryPosition">Posición Secundaria (Opcional)</label>
+          <select id="secondaryPosition" formControlName="secondaryPosition" class="form-control">
+            <option value="">Ninguna / No aplica</option>
+            <option *ngFor="let pos of positions" [value]="pos.value">{{ pos.label }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label for="preferredFoot">Pie Hábil *</label>
+          <select id="preferredFoot" formControlName="preferredFoot" class="form-control">
+            <option value="DERECHO">Diestro (Derecho)</option>
+            <option value="IZQUIERDO">Zurdo (Izquierdo)</option>
+            <option value="AMBIDIESTRO">Ambidiestro</option>
+          </select>
+        </div>
+
+        <div class="form-group col-half">
+          <label for="gender">Género *</label>
+          <select id="gender" formControlName="gender" class="form-control">
+            <option value="MALE">Masculino</option>
+            <option value="FEMALE">Femenino</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label for="currentClubName">Club o Academia Actual</label>
+          <input
+            id="currentClubName"
+            type="text"
+            formControlName="currentClubName"
+            class="form-control"
+            placeholder="Ej. Deportivo La Guaira Sub-20, Agente libre"
+          />
+        </div>
+
+        <div class="form-group col-half">
+          <label for="nationality">Nacionalidad *</label>
+          <input
+            id="nationality"
+            type="text"
+            formControlName="nationality"
+            class="form-control"
+            placeholder="Ej. Venezolana"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label for="heightCm">Estatura (cm)</label>
+          <input
+            id="heightCm"
+            type="number"
+            step="0.5"
+            formControlName="heightCm"
+            class="form-control"
+            placeholder="Ej. 178"
+          />
+        </div>
+
+        <div class="form-group col-half">
+          <label for="weightKg">Peso Corporal (kg)</label>
+          <input
+            id="weightKg"
+            type="number"
+            step="0.5"
+            formControlName="weightKg"
+            class="form-control"
+            placeholder="Ej. 72"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="bio">Breve Biografía o Trayectoria (Opcional)</label>
+        <textarea
+          id="bio"
+          formControlName="bio"
+          class="form-control"
+          rows="2"
+          placeholder="Cuéntale a los scouts tus principales cualidades futbolísticas, torneos destacados o logros..."
+        ></textarea>
+      </div>
+
+      <!-- SECCIÓN OPCIONAL: IDENTIFICACIÓN LEGAL INICIAL -->
+      <div class="verification-box">
+        <div class="box-header">
+          <span class="box-icon">🆔</span>
+          <div>
+            <h4 class="box-title">Documento de Identidad (Opcional)</h4>
+            <p class="box-desc">Sube tu Cédula o Pasaporte para iniciar tu auditoría y obtener la insignia de identidad verificada.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-half">
+            <label for="idDocumentFile">Foto o PDF de tu Cédula / Pasaporte</label>
+            <input
+              id="idDocumentFile"
+              type="file"
+              accept=".pdf,image/jpeg,image/png,image/webp"
+              (change)="onIdDocumentSelected($event)"
+              class="form-control file-input"
+            />
+          </div>
+
+          <div class="form-group col-half">
+            <label for="selfieFile">Selfie sosteniendo tu documento</label>
+            <input
+              id="selfieFile"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onSelfieSelected($event)"
+              class="form-control file-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions-split">
+        <button type="button" class="btn btn-secondary" (click)="goToStep1()">
+          ← Volver al Paso 1
+        </button>
+        <button type="submit" class="btn btn-primary btn-lg" [disabled]="isLoading || sportsForm.invalid">
+          <span *ngIf="isLoading" class="spinner"></span>
+          <span *ngIf="!isLoading">Completar Registro y Entrar al Radar ⚡</span>
+          <span *ngIf="isLoading">Creando tu Cédula Deportiva...</span>
+        </button>
+      </div>
+    </form>
+
+    <footer class="auth-footer text-center">
+      <p class="login-link-text">
+        ¿Ya tienes cuenta creada?
+        <a routerLink="/login" class="text-link">Inicia sesión aquí</a>
+      </p>
+      <div class="tutor-switch">
+        ¿Eres representante de un futbolista menor de 18 años?
+        <a routerLink="/register-tutor" class="text-link">Registro de Tutor</a>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- MODAL DE TÉRMINOS Y DIFUSIÓN -->
+<app-athlete-terms-modal
+  *ngIf="showTermsModal"
+  (close)="closeTermsModal()"
+></app-athlete-terms-modal>
