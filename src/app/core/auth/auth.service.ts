@@ -8,6 +8,7 @@ import {
   LoginRequest,
   RegisterTutorRequest,
   RegisterTutorResponse,
+  RegisterAdultAthleteResponse,
   RegisterScoutResponse,
   UserProfileResponse,
   SocialAuthRequest,
@@ -35,6 +36,8 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this.token());
   readonly needsProfileCompletion = computed(() => this.currentUser()?.isProfileCompleted === false);
   readonly isTutor = computed(() => this.currentUser()?.role === 'TUTOR');
+  readonly isAthlete = computed(() => this.currentUser()?.role === 'ATHLETE');
+  readonly canAccessAthleteDashboard = computed(() => this.isTutor() || this.isAthlete());
   readonly isAdmin = computed(() => this.currentUser()?.role === 'ADMIN');
   readonly isScout = computed(() => this.currentUser()?.role === 'SCOUT');
   readonly isVerifiedScout = computed(() => 
@@ -96,6 +99,21 @@ export class AuthService {
 
   registerScout(data: FormData): Observable<RegisterScoutResponse> {
     return this.http.post<RegisterScoutResponse>('/api/v1/auth/register-scout', data);
+  }
+
+  registerAdultAthlete(data: FormData): Observable<RegisterAdultAthleteResponse> {
+    return this.http.post<RegisterAdultAthleteResponse>('/api/v1/auth/register-athlete', data).pipe(
+      tap((res) => {
+        if (res.token) {
+          this.saveSession(res.token, {
+            id: res.userId,
+            email: res.email,
+            fullName: res.fullName,
+            role: res.role
+          });
+        }
+      })
+    );
   }
 
   verifyEmail(token: string): Observable<AuthResponse> {

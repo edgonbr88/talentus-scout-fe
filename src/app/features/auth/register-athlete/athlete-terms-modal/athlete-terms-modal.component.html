@@ -1,0 +1,54 @@
+<div class="terms-modal-overlay" (click)="onClose()">
+  <div class="terms-modal-container" (click)="$event.stopPropagation()">
+    <header class="terms-modal-header">
+      <div class="terms-modal-badge">MARCO LEGAL & DIFUSIÓN OFICIAL</div>
+      <h2 class="terms-modal-title">Términos de Servicio y Cesión de Imagen para Atletas Mayores de Edad</h2>
+      <p class="terms-modal-subtitle">Versión 1.0 — Talentus Scout Radar Oficial</p>
+      <button class="terms-modal-close" (click)="onClose()" aria-label="Cerrar ventana">✕</button>
+    </header>
+
+    <div class="terms-modal-body">
+      <section class="terms-section">
+        <h3>1. Mayoría de Edad y Capacidad Jurídica</h3>
+        <p>
+          Al registrarte en Talentus Scout como Atleta Mayor de Edad, declaras bajo fe de juramento haber cumplido al menos dieciocho (18) años de edad a la fecha del registro, contando con plena capacidad civil y jurídica para obligarte de conformidad con el Código Civil de la República Bolivariana de Venezuela y los ordenamientos jurídicos aplicables.
+        </p>
+      </section>
+
+      <section class="terms-section">
+        <h3>2. Autonomía y Administración del Expediente Deportivo</h3>
+        <p>
+          Como atleta titular, eres el único y exclusivo responsable de la veracidad de la información biométrica, trayectoria deportiva, afiliación a clubes y material audiovisual cargado en tu cédula digital. Queda prohibida la suplantación de identidad o la publicación de registros alterados.
+        </p>
+      </section>
+
+      <section class="terms-section highlight-box">
+        <h3>3. Cláusula de Difusión Institucional y Cesión de Imagen Deportiva</h3>
+        <p>
+          Autorizas de forma libre, expresa, voluntaria e informada a <strong>Talentus Scout C.A.</strong> a reproducir, transmitir, publicar y difundir públicamente tus videos de jugadas, fotografías y métricas deportivas a través de la plataforma, el radar de scouting, catálogos digitales y canales de difusión institucional, con el propósito exclusivo de visibilizar tu talento ante scouts, clubes, agentes y academias profesionales nacionales e internacionales.
+        </p>
+        <p class="clause-note">
+          Esta autorización respeta la legislación en materia de derecho a la propia imagen y no constituye cesión de derechos federativos ni de intermediación económica obligatoria.
+        </p>
+      </section>
+
+      <section class="terms-section">
+        <h3>4. Verificación de Identidad Oficial</h3>
+        <p>
+          A fin de garantizar la autenticidad y prevenir fraudes deportivos, Talentus Scout podrá requerir la consignación de copia de tu documento de identidad oficial (Cédula de Identidad o Pasaporte) y una selfie biométrica para otorgarte el distintivo de <em>Identidad Verificada Oficial</em>.
+        </p>
+      </section>
+
+      <section class="terms-section">
+        <h3>5. Normativa FIFA y Protección Deportiva</h3>
+        <p>
+          Talentus Scout opera con apego irrestricto al Reglamento sobre el Estatuto y la Transferencia de Jugadores de la FIFA. La plataforma es un radar de visualización tecnológica y no un agente de intermediación deportiva.
+        </p>
+      </section>
+    </div>
+
+    <footer class="terms-modal-footer">
+      <button class="btn btn-primary" (click)="onClose()">Entendido y Conforme</button>
+    </footer>
+  </div>
+</div>

@@ -12,7 +12,7 @@
     <!-- Navegación Principal -->
     <nav class="navbar-nav">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Inicio</a>
-      @if (authService.isTutor()) {
+      @if (authService.canAccessAthleteDashboard()) {
         <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Mi Panel</a>
       }
       @if (authService.canAccessDirectory()) {
@@ -25,6 +25,7 @@
         <a routerLink="/admin/clubes" routerLinkActive="active" class="nav-link">Clubes y Academias</a>
       }
       @if (!authService.isAuthenticated()) {
+        <a routerLink="/register-athlete" routerLinkActive="active" class="nav-link">Soy Atleta (+18)</a>
         <a routerLink="/register-scout" routerLinkActive="active" class="nav-link">¿Eres Scout?</a>
       }
     </nav>

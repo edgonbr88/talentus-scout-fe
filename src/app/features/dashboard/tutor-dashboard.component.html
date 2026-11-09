@@ -44,10 +44,12 @@
     <div class="bento-card col-span-12 md-col-8">
       <div class="card-top-bar">
         <div class="title-with-badge">
-          <h3>Mis Atletas Representados</h3>
-          <span class="badge badge-official">{{ athletes.length }} REGISTRADOS</span>
+          <h3 *ngIf="!authService.isAthlete()">Mis Atletas Representados</h3>
+          <h3 *ngIf="authService.isAthlete()">Mi Ficha Oficial de Atleta</h3>
+          <span class="badge badge-official" *ngIf="!authService.isAthlete()">{{ athletes.length }} REGISTRADOS</span>
+          <span class="badge badge-official" *ngIf="authService.isAthlete()">ATLETA TITULAR</span>
         </div>
-        <button *ngIf="athletes.length > 0" class="btn btn-primary btn-sm" (click)="openAthleteModal()" type="button">
+        <button *ngIf="!authService.isAthlete() && athletes.length > 0" class="btn btn-primary btn-sm" (click)="openAthleteModal()" type="button">
           + Registrar Atleta
         </button>
       </div>
@@ -269,7 +271,7 @@
           Crea la cédula deportiva digital de tu representado con medidas biométricas, pierna hábil, 
           club actual y genera su enlace público oficial para compartir con clubes y cazatalentos.
         </p>
-        <div class="empty-action">
+        <div class="empty-action" *ngIf="!authService.isAthlete()">
           <button class="btn btn-primary" (click)="openAthleteModal()">
             Registrar Atleta Menor de Edad
           </button>
@@ -281,7 +283,8 @@
     <div class="bento-card col-span-12 md-col-4">
       <div class="title-with-badge">
         <span class="shield-badge">🛡️</span>
-        <h3>Protección Legal del Menor</h3>
+        <h3 *ngIf="!authService.isAthlete()">Protección Legal del Menor</h3>
+        <h3 *ngIf="authService.isAthlete()">Expediente y Protección Legal</h3>
       </div>
       <div class="status-summary">
         <div class="status-row">
