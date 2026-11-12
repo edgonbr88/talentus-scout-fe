@@ -17,6 +17,7 @@
       }
       @if (authService.canAccessDirectory()) {
         <a routerLink="/scout/directory" routerLinkActive="active" class="nav-link">Directorio Scouts</a>
+        <a routerLink="/scout/bulk-import" routerLinkActive="active" class="nav-link">Carga Masiva</a>
       }
       @if (authService.isAdmin()) {
         <a routerLink="/admin/scouts" routerLinkActive="active" class="nav-link">Auditoría Scouts</a>
