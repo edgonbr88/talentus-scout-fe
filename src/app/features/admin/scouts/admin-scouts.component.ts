@@ -30,6 +30,7 @@ export class AdminScoutsComponent implements OnInit {
   readonly allScouts = signal<PendingScout[]>([]);
   readonly isLoadingAll = signal<boolean>(false);
   readonly updatingScoutId = signal<string | null>(null);
+  searchQuery = '';
 
   // Notificaciones y Toasts
   readonly feedback = signal<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -54,7 +55,7 @@ export class AdminScoutsComponent implements OnInit {
 
   loadAllScouts(): void {
     this.isLoadingAll.set(true);
-    this.adminScoutService.getAllScouts(0, 50).subscribe({
+    this.adminScoutService.getAllScouts(this.searchQuery, 0, 50).subscribe({
       next: (page) => {
         this.allScouts.set(page.content);
         this.isLoadingAll.set(false);
@@ -64,6 +65,15 @@ export class AdminScoutsComponent implements OnInit {
         this.showFeedback('error', 'Error al cargar el directorio de scouts: ' + (err.error?.message || err.message));
       }
     });
+  }
+
+  onSearchChange(): void {
+    this.loadAllScouts();
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.loadAllScouts();
   }
 
   toggleBulkImport(scout: PendingScout, event: Event): void {

@@ -228,6 +228,27 @@
         </button>
       </div>
 
+      <!-- Barra de Búsqueda y Filtro de Scouts -->
+      <div class="bento-card" style="margin-bottom: 20px; padding: 14px 18px; display: flex; align-items: center; gap: 14px;">
+        <span style="font-size: 16px; opacity: 0.7;">🔍</span>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="onSearchChange()"
+          placeholder="Buscar por nombre, correo electrónico u organización..."
+          style="flex: 1; background: transparent; border: none; color: #FFFFFF; font-size: 14px; outline: none;"
+        />
+        @if (searchQuery.trim().length > 0) {
+          <button
+            type="button"
+            (click)="clearSearch()"
+            style="background: transparent; border: none; color: var(--color-text-dim); cursor: pointer; font-size: 12px; font-weight: 600; padding: 4px 8px;"
+          >
+            ✕ Limpiar filtro
+          </button>
+        }
+      </div>
+
       @if (isLoadingAll()) {
         <div class="loading-state">
           <div class="athletic-spinner"></div>
