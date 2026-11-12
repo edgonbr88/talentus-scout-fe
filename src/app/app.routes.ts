@@ -107,6 +107,22 @@ export const routes: Routes = [
     title: 'Directorio de Búsqueda de Talentos — Talentus Scout'
   },
   {
+    path: 'scout/bulk-import',
+    loadComponent: () => import('./features/scout-bulk-import/scout-bulk-import.component').then(m => m.ScoutBulkImportComponent),
+    canActivate: [authGuard, scoutGuard],
+    title: 'Carga Masiva de Atletas y Tutores — Talentus Scout'
+  },
+  {
+    path: 'auth/activar-tutor',
+    loadComponent: () => import('./features/auth/tutor-activation/tutor-activation.component').then(m => m.TutorActivationComponent),
+    title: 'Activación de Cuenta de Tutor — Talentus Scout'
+  },
+  {
+    path: 'auth/rechazar-tutor',
+    loadComponent: () => import('./features/auth/tutor-activation/tutor-activation.component').then(m => m.TutorActivationComponent),
+    title: 'Rechazo de Registro de Atleta — Talentus Scout'
+  },
+  {
     path: 'atleta/:slug',
     component: BentoProfileComponent,
     title: 'Ficha del Atleta — Talentus Scout'
