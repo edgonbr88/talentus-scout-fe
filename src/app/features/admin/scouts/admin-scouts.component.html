@@ -321,6 +321,33 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Paginación de Scouts -->
+          @if (totalPages() > 1) {
+            <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid var(--color-border); background: rgba(255, 255, 255, 0.02);">
+              <span class="pagination-info" style="font-size: 13px; color: var(--color-text-muted);">
+                Página <strong>{{ currentPage + 1 }}</strong> de <strong>{{ totalPages() }}</strong> ({{ totalElements() }} reclutadores registrados)
+              </span>
+              <div class="pagination-actions" style="display: flex; gap: 8px;">
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  [disabled]="currentPage === 0 || isLoadingAll()"
+                  (click)="loadAllScouts(currentPage - 1)"
+                >
+                  ← Anterior
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  [disabled]="currentPage >= totalPages() - 1 || isLoadingAll()"
+                  (click)="loadAllScouts(currentPage + 1)"
+                >
+                  Siguiente →
+                </button>
+              </div>
+            </div>
+          }
         </div>
       }
     </section>
