@@ -58,6 +58,7 @@ export interface UserProfileResponse {
   scoutVerificationStatus?: ScoutVerificationStatus;
   rejectionReason?: string;
   isProfileCompleted?: boolean;
+  bulkImportEnabled?: boolean;
 }
 
 export interface SocialAuthRequest {

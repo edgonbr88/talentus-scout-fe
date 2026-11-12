@@ -206,7 +206,8 @@ export class AuthService {
           status: profile.status,
           scoutVerificationStatus: profile.scoutVerificationStatus,
           rejectionReason: profile.rejectionReason,
-          isProfileCompleted: profile.isProfileCompleted ?? true
+          isProfileCompleted: profile.isProfileCompleted ?? true,
+          bulkImportEnabled: profile.bulkImportEnabled ?? false
         });
       }),
       catchError((err) => {
