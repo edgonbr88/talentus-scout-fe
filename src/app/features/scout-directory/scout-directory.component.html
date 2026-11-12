@@ -15,10 +15,12 @@
       </div>
 
       <div class="header-actions-group" style="display: flex; gap: 16px; align-items: center;">
-        <a routerLink="/scout/bulk-import" class="btn-bulk-import-link" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10B981; font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: 12px; text-decoration: none; transition: all 0.2s ease;">
-          <span>📥</span>
-          <span>Carga Masiva de Atletas</span>
-        </a>
+        @if (authService.canAccessBulkImport()) {
+          <a routerLink="/scout/bulk-import" class="btn-bulk-import-link" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10B981; font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: 12px; text-decoration: none; transition: all 0.2s ease;">
+            <span>📥</span>
+            <span>Carga Masiva de Atletas</span>
+          </a>
+        }
 
         <div class="radar-counter-card">
           <span class="counter-label">Talentos en Radar</span>

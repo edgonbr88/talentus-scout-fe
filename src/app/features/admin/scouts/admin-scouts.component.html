@@ -11,8 +11,32 @@
     </button>
   </app-admin-header>
 
-  <!-- BANNER BENTO DE MÉTRICAS OPERATIVAS -->
-  <section class="bento-metrics">
+  <!-- PESTAÑAS DE NAVEGACIÓN ADMINISTRATIVA -->
+  <div class="admin-tabs-bar" style="display: flex; gap: 12px; border-bottom: 1px solid var(--color-border); margin: 24px 0 28px; padding-bottom: 12px;">
+    <button 
+      type="button" 
+      class="btn btn-sm" 
+      [ngClass]="activeTab() === 'pending' ? 'btn-primary' : 'btn-secondary'"
+      (click)="setTab('pending')"
+    >
+      <span>⏳</span>
+      <span>Auditoría de Pendientes ({{ totalPending() }})</span>
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-sm" 
+      [ngClass]="activeTab() === 'all' ? 'btn-primary' : 'btn-secondary'"
+      (click)="setTab('all')"
+    >
+      <span>👥</span>
+      <span>Directorio de Scouts & Permisos de Carga Masiva</span>
+    </button>
+  </div>
+
+  <!-- CONTENIDO DE PESTAÑA: COLA DE AUDITORÍA PENDIENTE -->
+  @if (activeTab() === 'pending') {
+    <!-- BANNER BENTO DE MÉTRICAS OPERATIVAS -->
+    <section class="bento-metrics">
     <div class="metric-card metric-primary">
       <span class="metric-label">Solicitudes Pendientes</span>
       <div class="metric-value-row">
@@ -188,6 +212,98 @@
       }
     </div>
   </section>
+  }
+
+  <!-- CONTENIDO DE PESTAÑA: DIRECTORIO DE SCOUTS Y GESTIÓN DE CARGA MASIVA -->
+  @if (activeTab() === 'all') {
+    <section class="all-scouts-section">
+      <div class="queue-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+          <h2 class="queue-title">Gestión de Scouts y Acceso a Carga Masiva</h2>
+          <span class="queue-note">Habilita individualmente la capacidad de importar atletas y tutores para clubes y academias autorizadas.</span>
+        </div>
+        <button (click)="loadAllScouts()" class="btn btn-secondary btn-sm" type="button" [disabled]="isLoadingAll()">
+          <span>🔄</span>
+          <span>Actualizar Listado</span>
+        </button>
+      </div>
+
+      @if (isLoadingAll()) {
+        <div class="loading-state">
+          <div class="athletic-spinner"></div>
+          <p>Cargando directorio de scouts registrados...</p>
+        </div>
+      }
+
+      @if (!isLoadingAll() && allScouts().length === 0) {
+        <div class="empty-state-card">
+          <div class="empty-icon-shield">ℹ️</div>
+          <h2>Sin scouts registrados</h2>
+          <p>Aún no hay reclutadores dados de alta en la plataforma.</p>
+        </div>
+      }
+
+      @if (!isLoadingAll() && allScouts().length > 0) {
+        <div class="bento-card" style="padding: 0; overflow: hidden;">
+          <div class="table-responsive" style="overflow-x: auto;">
+            <table class="custom-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+              <thead>
+                <tr style="background: #0E1527; border-bottom: 1px solid var(--color-border);">
+                  <th style="padding: 14px 18px; font-size: 11px; text-transform: uppercase; color: var(--color-text-dim);">Scout / Representante</th>
+                  <th style="padding: 14px 18px; font-size: 11px; text-transform: uppercase; color: var(--color-text-dim);">Club / Academia</th>
+                  <th style="padding: 14px 18px; font-size: 11px; text-transform: uppercase; color: var(--color-text-dim);">Rol Acreditado</th>
+                  <th style="padding: 14px 18px; font-size: 11px; text-transform: uppercase; color: var(--color-text-dim);">Estado Acreditación</th>
+                  <th style="padding: 14px 18px; font-size: 11px; text-transform: uppercase; color: var(--color-text-dim); text-align: center;">Carga Masiva</th>
+                </tr>
+              </thead>
+              <tbody style="divide-y: 1px solid var(--color-border);">
+                @for (scout of allScouts(); track scout.scoutProfileId) {
+                  <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background-color 0.15s ease;">
+                    <td style="padding: 14px 18px;">
+                      <div style="font-weight: 700; color: #FFFFFF;">{{ scout.fullName }}</div>
+                      <div style="font-size: 12px; color: var(--color-text-dim); font-family: monospace;">{{ scout.email }}</div>
+                    </td>
+                    <td style="padding: 14px 18px; color: var(--color-text-main); font-weight: 600;">
+                      {{ scout.organizationName }}
+                    </td>
+                    <td style="padding: 14px 18px; color: var(--color-text-muted);">
+                      {{ scout.scoutRole }}
+                    </td>
+                    <td style="padding: 14px 18px;">
+                      <span 
+                        class="badge" 
+                        [ngClass]="{
+                          'badge-verified': scout.verificationStatus === 'APPROVED',
+                          'badge-official': scout.verificationStatus === 'PENDING'
+                        }"
+                        style="font-size: 11px;"
+                      >
+                        {{ scout.verificationStatus }}
+                      </span>
+                    </td>
+                    <td style="padding: 14px 18px; text-align: center;">
+                      <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
+                        <input 
+                          type="checkbox" 
+                          [checked]="scout.bulkImportEnabled" 
+                          [disabled]="updatingScoutId() === scout.scoutProfileId"
+                          (change)="toggleBulkImport(scout, $event)"
+                          style="width: 18px; height: 18px; accent-color: var(--color-accent-pitch); cursor: pointer;"
+                        />
+                        <span style="font-size: 12px; font-weight: 700;" [style.color]="scout.bulkImportEnabled ? 'var(--color-accent-pitch)' : 'var(--color-text-dim)'">
+                          {{ scout.bulkImportEnabled ? 'Habilitado' : 'Deshabilitado' }}
+                        </span>
+                      </label>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </section>
+  }
 
   <!-- MODAL DE RECHAZO MOTIVADO -->
   <div *ngIf="isRejectModalOpen()" class="modal-backdrop" (click)="closeRejectModal()">
