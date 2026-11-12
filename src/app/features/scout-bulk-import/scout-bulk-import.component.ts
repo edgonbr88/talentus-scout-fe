@@ -11,7 +11,8 @@ import { switchMap } from 'rxjs/operators';
   selector: 'app-scout-bulk-import',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
-  templateUrl: './scout-bulk-import.component.html'
+  templateUrl: './scout-bulk-import.component.html',
+  styleUrls: ['./scout-bulk-import.component.css']
 })
 export class ScoutBulkImportComponent implements OnInit, OnDestroy {
   activeTab: 'file' | 'google' = 'file';

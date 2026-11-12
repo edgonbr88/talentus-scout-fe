@@ -1,204 +1,252 @@
-<div class="min-h-screen bg-[#070B14] text-slate-100 p-6 md:p-10 font-sans">
-  <div class="max-w-6xl mx-auto space-y-8">
+<div class="bulk-layout">
+  
+  <!-- Cabecera Oficial Deportiva -->
+  <header class="bulk-header">
+    <div class="container header-container">
+      <div class="header-titles">
+        <div class="header-tag">
+          <span class="pulse-indicator"></span>
+          <span>ADMINISTRACIÓN DE CLUBES Y ACADEMIAS</span>
+        </div>
+        <h1 class="header-title">Carga Masiva de Atletas y Tutores</h1>
+        <p class="header-desc">
+          Importa plantillas de hasta 1000 jugadores juveniles con respaldo institucional. Los deportistas se incorporan al radar de tu club y se envía una invitación por correo a sus representantes para activar y completar su documentación LOPNNA.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" (click)="downloadTemplate('xlsx')" class="btn-template">
+          <span>📊</span>
+          <span>Descargar Plantilla Excel</span>
+        </button>
+        <button type="button" (click)="downloadTemplate('csv')" class="btn-template">
+          <span>📄</span>
+          <span>Descargar CSV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
     
-    <!-- Header Deportivo Bento -->
-    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-xs uppercase tracking-widest text-emerald-400 font-semibold">Gestión de Clubes y Academias</span>
-        </div>
-        <h1 class="text-3xl font-extrabold tracking-tight mt-1 text-white">Carga Masiva de Atletas y Tutores</h1>
-        <p class="text-slate-400 text-sm mt-0.5">Incorpora plantillas oficiales de hasta 1000 deportistas con pre-verificación de club y activación por tutor.</p>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <button (click)="downloadTemplate('xlsx')"
-                class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-colors flex items-center gap-2">
-          <span>📊</span> Descargar Plantilla Excel
-        </button>
-        <button (click)="downloadTemplate('csv')"
-                class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-semibold border border-white/10 transition-colors flex items-center gap-2">
-          <span>📄</span> Descargar CSV
-        </button>
-      </div>
-    </header>
-
-    <!-- Bento Grid de Carga y Acciones -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Bento Grid Superior -->
+    <div class="bento-container">
       
-      <!-- Card Izquierda: Métodos de Carga (Dual) -->
-      <div class="lg:col-span-2 bg-[#0D1424] border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <!-- Card Izquierda: Entrada Dual (Archivo / Google Sheet) -->
+      <section class="bento-card-main" aria-label="Formulario de Carga">
         
-        <!-- Pestañas de Selección -->
-        <div class="flex items-center gap-2 border-b border-white/10 pb-4 mb-6">
-          <button (click)="setTab('file')"
-                  [class]="activeTab === 'file' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:text-white'"
-                  class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
-            <span>📁</span> Archivo Local (.xlsx / .csv)
+        <!-- Pestañas de Navegación -->
+        <div class="tabs-nav">
+          <button type="button" class="tab-btn" [class.active]="activeTab === 'file'" (click)="setTab('file')">
+            <span>📁</span>
+            <span>Archivo Local (.xlsx / .csv)</span>
           </button>
-          <button (click)="setTab('google')"
-                  [class]="activeTab === 'google' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:text-white'"
-                  class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
-            <span>🌐</span> Google Sheets
+          <button type="button" class="tab-btn" [class.active]="activeTab === 'google'" (click)="setTab('google')">
+            <span>🌐</span>
+            <span>Google Sheets</span>
           </button>
         </div>
 
-        <!-- Alerta de Error -->
-        <div *ngIf="errorMessage" class="mb-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
-          <span>⚠️</span> {{ errorMessage }}
-        </div>
+        <!-- Mensaje de Alerta / Error -->
+        @if (errorMessage) {
+          <div class="alert alert-danger" role="alert">
+            <span>⚠️</span>
+            <span>{{ errorMessage }}</span>
+          </div>
+        }
 
-        <!-- Vista 1: Carga por Archivo -->
-        <div *ngIf="activeTab === 'file'" class="space-y-4">
-          <div (dragover)="onDragOver($event)" (drop)="onDrop($event)"
-               class="border-2 border-dashed border-white/15 hover:border-emerald-500/50 rounded-2xl p-8 text-center transition-all cursor-pointer bg-white/[0.02]">
-            <input type="file" (change)="onFileSelected($event)" accept=".xlsx, .csv" class="hidden" #fileInput>
-            <div (click)="fileInput.click()" class="space-y-2">
-              <div class="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xl font-bold">
-                📥
-              </div>
-              <p class="text-sm font-semibold text-white">Haz clic para buscar o arrastra tu archivo aquí</p>
-              <p class="text-xs text-slate-400">Admite archivos .xlsx (Excel) y .csv codificados en UTF-8</p>
-              <p *ngIf="selectedFile" class="text-xs text-emerald-400 font-bold mt-2">
-                Seleccionado: {{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)
-              </p>
+        <!-- Pestaña 1: Archivo Local -->
+        @if (activeTab === 'file') {
+          <div>
+            <div class="dropzone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="fileInput.click()">
+              <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .csv" style="display: none;">
+              
+              <div class="dropzone-icon">📥</div>
+              <h2 class="dropzone-title">Haz clic para buscar o arrastra tu archivo aquí</h2>
+              <p class="dropzone-subtitle">Formatos admitidos: Microsoft Excel (.xlsx) o Delimitado por comas (.csv UTF-8)</p>
+
+              @if (selectedFile) {
+                <div class="file-selected-badge">
+                  <span>📄</span>
+                  <span>{{ selectedFile.name }} ({{ (selectedFile.size / 1024).toFixed(1) }} KB)</span>
+                </div>
+              }
             </div>
+
+            <button type="button" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px;"
+                    (click)="startFileUpload()" [disabled]="!selectedFile || isUploading">
+              {{ isUploading ? 'Iniciando carga asíncrona...' : 'Procesar Carga Masiva' }}
+            </button>
           </div>
+        }
 
-          <button (click)="startFileUpload()" [disabled]="!selectedFile || isUploading"
-                  class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#070B14] font-bold text-sm transition-all shadow-lg shadow-emerald-500/20">
-            {{ isUploading ? 'Iniciando procesamiento...' : 'Procesar Carga Masiva' }}
-          </button>
-        </div>
+        <!-- Pestaña 2: Google Sheets -->
+        @if (activeTab === 'google') {
+          <div>
+            <div class="instructions-card">
+              <h3 class="instructions-header">
+                <span>📋</span>
+                <span>Instrucciones para sincronizar Google Sheets:</span>
+              </h3>
+              <ul class="instructions-list">
+                <li><span>•</span> La primera hoja del libro debe incluir las 17 columnas de la plantilla oficial.</li>
+                <li><span>•</span> Asegúrate de que la hoja tenga permisos de acceso para cualquier usuario con el enlace (Modo Lector) o compártela con la cuenta de servicio oficial de Talentus Scout.</li>
+              </ul>
+            </div>
 
-        <!-- Vista 2: Google Sheets -->
-        <div *ngIf="activeTab === 'google'" class="space-y-4">
-          <div class="p-4 rounded-xl bg-white/[0.03] border border-white/5 space-y-2 text-xs text-slate-300">
-            <p class="font-bold text-emerald-400">Instrucciones para Google Sheets:</p>
-            <p>1. Asegúrate de que la primera hoja contenga exactamente las 17 columnas de la plantilla oficial.</p>
-            <p>2. Comparte la hoja con la cuenta de servicio oficial con permisos de "Lector" o configura el enlace como accesible.</p>
+            <div class="form-group">
+              <label for="sheetUrl" class="form-label">Enlace o ID del documento de Google Sheets</label>
+              <input type="text" id="sheetUrl" class="form-control" [(ngModel)]="googleSheetUrl"
+                     placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit">
+              <span class="form-hint">Pega el link completo desde la barra de direcciones de tu navegador.</span>
+            </div>
+
+            <button type="button" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px;"
+                    (click)="startGoogleSheetImport()" [disabled]="!googleSheetUrl.trim() || isUploading">
+              {{ isUploading ? 'Conectando con Google Sheets...' : 'Sincronizar e Importar Planilla' }}
+            </button>
           </div>
+        }
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-slate-300">Enlace o ID de Google Spreadsheet</label>
-            <input type="text" [(ngModel)]="googleSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit"
-                   class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500 transition-colors">
-          </div>
+      </section>
 
-          <button (click)="startGoogleSheetImport()" [disabled]="!googleSheetUrl.trim() || isUploading"
-                  class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#070B14] font-bold text-sm transition-all shadow-lg shadow-emerald-500/20">
-            {{ isUploading ? 'Conectando con Google Sheets...' : 'Sincronizar e Importar Planilla' }}
-          </button>
-        </div>
-
-      </div>
-
-      <!-- Card Derecha: Monitor de Progreso Activo -->
-      <div class="bg-[#0D1424] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+      <!-- Card Derecha: Monitor de Progreso en Tiempo Real -->
+      <aside class="bento-card-side" aria-label="Monitor de Estado">
         <div>
-          <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Estado del Proceso</h2>
-            <span *ngIf="activeJob" [class]="activeJob.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : (activeJob.status === 'PROCESSING' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400')"
-                  class="px-2.5 py-0.5 rounded-full text-[10px] font-bold">
-              {{ activeJob.status }}
-            </span>
+          <div class="card-header-side">
+            <h2 class="card-title-side">Estado del Proceso</h2>
+            @if (activeJob) {
+              <span class="status-badge" [ngClass]="{
+                'completed': activeJob.status === 'COMPLETED',
+                'processing': activeJob.status === 'PROCESSING',
+                'pending': activeJob.status === 'PENDING',
+                'failed': activeJob.status === 'FAILED'
+              }">{{ activeJob.status }}</span>
+            }
           </div>
 
-          <div *ngIf="!activeJob" class="text-center py-12 text-slate-500 space-y-2">
-            <span class="text-3xl block">⏱️</span>
-            <p class="text-xs">No hay importaciones en curso actualmente.</p>
-          </div>
+          @if (!activeJob) {
+            <div class="empty-state">
+              <div class="empty-state-icon">⏱️</div>
+              <p class="empty-state-text">No hay importaciones en curso en este momento. Selecciona o arrastra un archivo para comenzar.</p>
+            </div>
+          }
 
-          <div *ngIf="activeJob" class="space-y-4">
+          @if (activeJob) {
             <div>
-              <div class="flex justify-between text-xs text-slate-300 mb-1 font-semibold">
-                <span>Progreso de Procesamiento</span>
-                <span>{{ calculateProgress() }}%</span>
+              <div class="progress-section">
+                <div class="progress-labels">
+                  <span>Progreso de Procesamiento</span>
+                  <span>{{ calculateProgress() }}%</span>
+                </div>
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" [style.width.%]="calculateProgress()"></div>
+                </div>
               </div>
-              <div class="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
-                <div class="bg-emerald-400 h-2.5 transition-all duration-300 rounded-full" [style.width.%]="calculateProgress()"></div>
-              </div>
-            </div>
 
-            <div class="grid grid-cols-3 gap-2 text-center pt-2">
-              <div class="bg-white/[0.03] p-2.5 rounded-xl border border-white/5">
-                <span class="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
-                <p class="text-base font-extrabold text-white">{{ activeJob.totalRows }}</p>
+              <div class="metrics-row">
+                <div class="metric-pill">
+                  <span class="metric-pill-label">Total</span>
+                  <span class="metric-pill-value">{{ activeJob.totalRows }}</span>
+                </div>
+                <div class="metric-pill">
+                  <span class="metric-pill-label">Exitosos</span>
+                  <span class="metric-pill-value success">{{ activeJob.successfulRows }}</span>
+                </div>
+                <div class="metric-pill">
+                  <span class="metric-pill-label">Omitidos</span>
+                  <span class="metric-pill-value warning">{{ activeJob.failedRows }}</span>
+                </div>
               </div>
-              <div class="bg-white/[0.03] p-2.5 rounded-xl border border-white/5">
-                <span class="text-[10px] text-emerald-400 uppercase font-semibold">Exitosos</span>
-                <p class="text-base font-extrabold text-emerald-400">{{ activeJob.successfulRows }}</p>
-              </div>
-              <div class="bg-white/[0.03] p-2.5 rounded-xl border border-white/5">
-                <span class="text-[10px] text-amber-400 uppercase font-semibold">Omitidos</span>
-                <p class="text-base font-extrabold text-amber-400">{{ activeJob.failedRows }}</p>
-              </div>
-            </div>
 
-            <p *ngIf="activeJob.errorSummary" class="text-xs text-slate-400 bg-white/[0.02] p-2.5 rounded-xl border border-white/5">
-              {{ activeJob.errorSummary }}
-            </p>
+              @if (activeJob.errorSummary) {
+                <div class="job-summary-box">
+                  {{ activeJob.errorSummary }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (activeJob && activeJob.failedRows > 0) {
+          <div style="padding-top: 18px; border-top: 1px solid var(--color-border); margin-top: auto;">
+            <button type="button" class="btn btn-secondary" style="width: 100%; gap: 8px;"
+                    (click)="downloadErrorReport(activeJob.id)">
+              <span>📥</span>
+              <span>Descargar Informe de Omitidos (CSV)</span>
+            </button>
           </div>
-        </div>
-
-        <div *ngIf="activeJob && activeJob.failedRows > 0" class="pt-4 border-t border-white/10">
-          <button (click)="downloadErrorReport(activeJob.id)"
-                  class="w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-xs transition-colors flex items-center justify-center gap-2">
-            <span>📥</span> Descargar Informe de Omitidos
-          </button>
-        </div>
-      </div>
+        }
+      </aside>
 
     </div>
 
-    <!-- Historial de Cargas Recientes -->
-    <div class="bg-[#0D1424] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-white uppercase tracking-wider">Historial de Importaciones Recientes</h2>
-        <button (click)="loadRecentJobs()" class="text-xs text-slate-400 hover:text-white transition-colors">Actualizar 🔄</button>
+    <!-- Card Inferior: Historial Reciente de Importaciones -->
+    <section class="bento-card-full" aria-label="Historial de Cargas">
+      <div class="table-header-box">
+        <h2 style="font-size: 15px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">
+          Historial de Importaciones del Club
+        </h2>
+        <button type="button" class="btn btn-secondary" style="padding: 6px 14px; font-size: 12px;"
+                (click)="loadRecentJobs()">
+          <span>🔄</span>
+          <span>Actualizar</span>
+        </button>
       </div>
 
-      <div *ngIf="recentJobs.length === 0" class="text-center py-6 text-slate-500 text-xs">
-        No se registran importaciones previas para tu organización.
-      </div>
+      @if (recentJobs.length === 0) {
+        <div class="empty-state">
+          <p class="empty-state-text">No se registran importaciones previas en la plataforma para tu organización.</p>
+        </div>
+      }
 
-      <div *ngIf="recentJobs.length > 0" class="overflow-x-auto">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="text-[10px] uppercase tracking-wider text-slate-400 bg-white/[0.02] border-b border-white/5">
-            <tr>
-              <th class="py-3 px-4">Fecha</th>
-              <th class="py-3 px-4">Fuente</th>
-              <th class="py-3 px-4">Organización</th>
-              <th class="py-3 px-4">Exitosos / Total</th>
-              <th class="py-3 px-4">Estado</th>
-              <th class="py-3 px-4 text-right">Acción</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-white/5">
-            <tr *ngFor="let job of recentJobs" class="hover:bg-white/[0.02] transition-colors">
-              <td class="py-3 px-4 text-slate-400">{{ job.createdAt | date:'short' }}</td>
-              <td class="py-3 px-4 font-semibold text-white">{{ job.sourceType === 'GOOGLE_SHEET' ? 'Google Sheet' : (job.fileName || 'Archivo') }}</td>
-              <td class="py-3 px-4">{{ job.organizationName }}</td>
-              <td class="py-3 px-4">
-                <span class="text-emerald-400 font-bold">{{ job.successfulRows }}</span> / {{ job.totalRows }}
-              </td>
-              <td class="py-3 px-4">
-                <span [class]="job.status === 'COMPLETED' ? 'text-emerald-400' : 'text-amber-400'" class="font-bold">
-                  {{ job.status }}
-                </span>
-              </td>
-              <td class="py-3 px-4 text-right">
-                <button *ngIf="job.failedRows > 0" (click)="downloadErrorReport(job.id)"
-                        class="text-amber-400 hover:underline text-[11px] font-semibold">
-                  Reporte Errores
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+      @if (recentJobs.length > 0) {
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Fecha y Hora</th>
+                <th>Origen / Archivo</th>
+                <th>Organización</th>
+                <th>Exitosos / Total</th>
+                <th>Estado</th>
+                <th style="text-align: right;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (job of recentJobs; track job.id) {
+                <tr>
+                  <td>{{ job.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td style="font-weight: 600; color: #FFFFFF;">
+                    {{ job.sourceType === 'GOOGLE_SHEET' ? 'Google Sheet' : (job.fileName || 'Archivo') }}
+                  </td>
+                  <td>{{ job.organizationName }}</td>
+                  <td>
+                    <span style="color: var(--color-accent-pitch); font-weight: 700;">{{ job.successfulRows }}</span> / {{ job.totalRows }}
+                  </td>
+                  <td>
+                    <span class="status-badge" [ngClass]="{
+                      'completed': job.status === 'COMPLETED',
+                      'processing': job.status === 'PROCESSING',
+                      'pending': job.status === 'PENDING',
+                      'failed': job.status === 'FAILED'
+                    }">{{ job.status }}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    @if (job.failedRows > 0) {
+                      <button type="button" class="btn-report" (click)="downloadErrorReport(job.id)">
+                        Descargar Advertencias
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
 
   </div>
+
 </div>
