@@ -19,4 +19,16 @@ export class AdminScoutService {
   reviewScout(scoutProfileId: string, request: ReviewScoutRequest): Observable<ScoutReviewResponse> {
     return this.http.post<ScoutReviewResponse>(`/api/v1/admin/scouts/${scoutProfileId}/review`, request);
   }
+
+  getAllScouts(page = 0, size = 50): Observable<Page<PendingScout>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+    return this.http.get<Page<PendingScout>>('/api/v1/admin/scouts', { params });
+  }
+
+  toggleBulkImport(scoutProfileId: string, enabled: boolean): Observable<PendingScout> {
+    const params = new HttpParams().set('enabled', enabled.toString());
+    return this.http.patch<PendingScout>(`/api/v1/admin/scouts/${scoutProfileId}/bulk-import`, {}, { params });
+  }
 }

@@ -1,0 +1,74 @@
+<div class="min-h-screen bg-[#070B14] text-slate-100 flex items-center justify-center p-6 font-sans">
+  <div class="max-w-md w-full bg-[#0D1424] border border-white/10 rounded-2xl p-8 shadow-2xl relative">
+    
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <span class="text-xs uppercase tracking-widest text-emerald-400 font-semibold">Talentus Scout Oficial</span>
+      <h1 class="text-2xl font-extrabold text-white mt-1">Activación de Tutor Legal</h1>
+      <p class="text-slate-400 text-xs mt-1">Tu academia o club deportivo ha pre-registrado a tu representado.</p>
+    </div>
+
+    <!-- Éxito -->
+    <div *ngIf="successMessage" class="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-4">
+      <span class="text-3xl block">✅</span>
+      <p class="text-sm font-semibold text-emerald-300">{{ successMessage }}</p>
+      <a routerLink="/login" class="inline-block px-6 py-2.5 rounded-xl bg-emerald-500 text-[#070B14] font-bold text-xs">
+        Iniciar Sesión
+      </a>
+    </div>
+
+    <!-- Formulario de Activación -->
+    <div *ngIf="!successMessage" class="space-y-5">
+      <div *ngIf="errorMessage" class="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+        {{ errorMessage }}
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-slate-300">Establece tu Contraseña</label>
+        <input type="password" [(ngModel)]="password" placeholder="Mínimo 8 caracteres"
+               class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500">
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-slate-300">Confirma tu Contraseña</label>
+        <input type="password" [(ngModel)]="confirmPassword" placeholder="Repite tu contraseña"
+               class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500">
+      </div>
+
+      <button (click)="activateAccount()" [disabled]="!token || isSubmitting"
+              class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#070B14] font-bold text-sm transition-all shadow-lg shadow-emerald-500/20">
+        {{ isSubmitting ? 'Activando cuenta...' : 'Activar Cuenta de Tutor' }}
+      </button>
+
+      <div class="border-t border-white/10 pt-4 text-center">
+        <button (click)="showRejectModal = true" class="text-xs text-red-400 hover:underline">
+          ¿No reconoces esta inscripción? Rechazar registro del atleta
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmación de Rechazo -->
+    <div *ngIf="showRejectModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#0D1424] border border-white/15 rounded-2xl p-6 max-w-sm w-full space-y-4">
+        <h3 class="text-base font-bold text-white">¿Rechazar Registro Oficial?</h3>
+        <p class="text-xs text-slate-400">
+          Esta acción desvinculará a tu representado de la organización y aplicará un borrado lógico inmediato a la ficha del atleta.
+        </p>
+
+        <textarea [(ngModel)]="rejectionReason" placeholder="Motivo opcional del rechazo..."
+                  class="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-red-500 resize-none h-20"></textarea>
+
+        <div class="flex items-center gap-3">
+          <button (click)="showRejectModal = false" class="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold">
+            Cancelar
+          </button>
+          <button (click)="confirmRejection()" [disabled]="isSubmitting"
+                  class="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold">
+            Confirmar Rechazo
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

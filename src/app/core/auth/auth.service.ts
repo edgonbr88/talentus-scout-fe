@@ -45,6 +45,7 @@ export class AuthService {
     (this.currentUser()?.scoutVerificationStatus === 'APPROVED' || this.currentUser()?.status === 'ACTIVE')
   );
   readonly canAccessDirectory = computed(() => this.isAdmin() || this.isVerifiedScout());
+  readonly canAccessBulkImport = computed(() => this.isAdmin() || (this.isVerifiedScout() && this.currentUser()?.bulkImportEnabled === true));
 
   constructor() {
     if (this.token()) {

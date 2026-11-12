@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ScoutDirectoryService } from '../../core/services/scout-directory.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { PageResponse, ScoutDirectoryAthleteItem, ScoutDirectoryFilters } from '../../core/models/scout-directory.model';
 import { VideoPlayerComponent } from '../../shared/components/video-player/video-player.component';
 import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
@@ -22,6 +23,7 @@ export interface CategoryOption {
 })
 export class ScoutDirectoryComponent implements OnInit {
   private directoryService = inject(ScoutDirectoryService);
+  authService = inject(AuthService);
 
   // Estados Reactivos con Signals
   athletes = signal<ScoutDirectoryAthleteItem[]>([]);
