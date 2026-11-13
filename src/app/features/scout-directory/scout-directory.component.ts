@@ -70,6 +70,7 @@ export class ScoutDirectoryComponent implements OnInit {
     { value: 'LATERAL_DERECHO', label: 'Lateral Derecho (LD)' },
     { value: 'LATERAL_IZQUIERDO', label: 'Lateral Izquierdo (LI)' },
     { value: 'PIVOTE_DEFENSIVO', label: 'Pivote Defensivo (MCD)' },
+    { value: 'MEDIOCAMPISTA_CENTRAL', label: 'Mediocampista Central (MC)' },
     { value: 'MEDIOCAMPISTA_OFENSIVO', label: 'Mediocampista Ofensivo (MCO)' },
     { value: 'EXTREMO_DERECHO', label: 'Extremo Derecho (ED)' },
     { value: 'EXTREMO_IZQUIERDO', label: 'Extremo Izquierdo (EI)' },
