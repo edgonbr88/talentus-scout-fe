@@ -13,8 +13,8 @@ import {
   providedIn: 'root'
 })
 export class BulkImportService {
-  private readonly apiUrl = `${environment.apiBaseUrl}/api/v1/scout/bulk-import`;
-  private readonly authUrl = `${environment.apiBaseUrl}/api/v1/auth/tutor`;
+  private readonly apiUrl = '/api/v1/scout/bulk-import';
+  private readonly authUrl = '/api/v1/auth/tutor';
 
   constructor(private http: HttpClient) {}
 
