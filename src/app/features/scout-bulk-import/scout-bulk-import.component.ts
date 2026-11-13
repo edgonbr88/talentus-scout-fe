@@ -5,7 +5,7 @@ import { RouterModule } from '@angular/router';
 import { BulkImportService } from '../../core/services/bulk-import.service';
 import { BulkImportJobResponse } from '../../core/models/bulk-import.model';
 import { Subscription, interval } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { switchMap, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-scout-bulk-import',
@@ -140,14 +140,25 @@ export class ScoutBulkImportComponent implements OnInit, OnDestroy {
 
   private startPolling(jobId: string): void {
     this.stopPolling();
+    let polls = 0;
+    const maxPolls = 150; // ~5 minutos máximo
     this.pollSub = interval(2000)
-      .pipe(switchMap(() => this.bulkImportService.getJobStatus(jobId)))
+      .pipe(
+        take(maxPolls),
+        switchMap(() => {
+          polls++;
+          return this.bulkImportService.getJobStatus(jobId);
+        })
+      )
       .subscribe({
         next: (job) => {
           this.activeJob = job;
           if (job.status === 'COMPLETED' || job.status === 'FAILED') {
             this.stopPolling();
             this.loadRecentJobs();
+          } else if (polls >= maxPolls) {
+            this.stopPolling();
+            this.errorMessage = 'El proceso está tardando más de lo esperado. Verifica el historial en unos segundos.';
           }
         },
         error: () => {
