@@ -1,74 +1,293 @@
-<div class="min-h-screen bg-[#070B14] text-slate-100 flex items-center justify-center p-6 font-sans">
-  <div class="max-w-md w-full bg-[#0D1424] border border-white/10 rounded-2xl p-8 shadow-2xl relative">
-    
-    <!-- Header -->
-    <div class="text-center mb-8">
-      <span class="text-xs uppercase tracking-widest text-emerald-400 font-semibold">Talentus Scout Oficial</span>
-      <h1 class="text-2xl font-extrabold text-white mt-1">Activación de Tutor Legal</h1>
-      <p class="text-slate-400 text-xs mt-1">Tu academia o club deportivo ha pre-registrado a tu representado.</p>
+<section class="activation-page" aria-labelledby="activation-heading">
+  <div class="activation-shell">
+    <!-- Panel Izquierdo: Contexto Institucional y Garantías LOPNNA -->
+    <aside class="context-panel">
+      <div class="brand-wrap">
+        <app-brand-logo variant="imagotipo" theme="dark" [height]="92" [clickable]="true"></app-brand-logo>
+      </div>
+
+      <span class="badge badge-lopnna">Protección al Menor · LOPNNA Art. 65</span>
+
+      <h1 id="activation-heading" class="context-title">
+        @if (isRejectMode()) {
+          Rechazar registro de representado
+        } @else {
+          Activa tu cuenta de Tutor Legal
+        }
+      </h1>
+
+      <p class="context-lead">
+        @if (isRejectMode()) {
+          Si no autorizaste la vinculación deportiva enviada por el club o academia, puedes revocar el pre-registro de forma inmediata.
+        } @else {
+          Tu academia o club deportivo ha pre-registrado a tu representado. Define tu contraseña personal para asumir el control de su ficha oficial.
+        }
+      </p>
+
+      <ul class="trust-list">
+        <li class="trust-item">
+          <span class="trust-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Control parental exclusivo</strong>
+            <span>Ningún perfil juvenil se publica sin tu validación y respaldo documental.</span>
+          </div>
+        </li>
+        <li class="trust-item">
+          <span class="trust-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Acceso directo al expediente</strong>
+            <span>Podrás editar datos deportivos, revisar certificaciones y gestionar permisos.</span>
+          </div>
+        </li>
+        <li class="trust-item">
+          <span class="trust-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Derecho de revocación</strong>
+            <span>Si no reconoces la inscripción, puedes rechazarla y eliminar los datos cargados.</span>
+          </div>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Panel Derecho: Formulario / Confirmación -->
+    <div class="action-panel">
+      <div class="visually-hidden" aria-live="polite">{{ liveAnnouncement() }}</div>
+
+      @if (successMessage()) {
+        <div class="status-card" [class.status-card-rejected]="wasRejected()">
+          <div class="status-icon" [class.status-icon-rejected]="wasRejected()" aria-hidden="true">
+            @if (wasRejected()) {
+              !
+            } @else {
+              ✓
+            }
+          </div>
+          <h2 class="status-title">
+            @if (wasRejected()) {
+              Vinculación rechazada
+            } @else {
+              Cuenta activada con éxito
+            }
+          </h2>
+          <p class="status-desc">{{ successMessage() }}</p>
+          <a routerLink="/login" class="btn btn-primary btn-full">
+            @if (wasRejected()) {
+              Volver a Talentus Scout
+            } @else {
+              Iniciar sesión en mi portal
+            }
+          </a>
+        </div>
+      } @else {
+        @if (errorMessage()) {
+          <div class="alert alert-danger" role="alert">
+            <span class="alert-symbol" aria-hidden="true">!</span>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        @if (!isRejectMode()) {
+          <header class="panel-header">
+            <h2 class="panel-title">Configura tus credenciales</h2>
+            <p class="panel-subtitle">Usa este correo electrónico y la nueva contraseña que elijas para acceder.</p>
+          </header>
+
+          <form [formGroup]="activationForm" (ngSubmit)="activateAccount()" novalidate>
+            <div class="form-group">
+              <label for="tutor-password" class="form-label">
+                Contraseña nueva <span class="required-mark" aria-hidden="true">*</span>
+              </label>
+              <!-- Reglas encima del campo para que el teclado móvil no las oculte -->
+              <p id="password-rules" class="field-hint">Mínimo 8 caracteres. Puedes combinar letras, números o símbolos.</p>
+              <div class="input-wrapper">
+                <input
+                  id="tutor-password"
+                  name="password"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  formControlName="password"
+                  class="form-control form-control-pwd"
+                  [class.is-invalid]="showPasswordError()"
+                  placeholder="Ingresa al menos 8 caracteres"
+                  autocomplete="new-password"
+                  enterkeyhint="next"
+                  minlength="8"
+                  required
+                  [attr.aria-invalid]="showPasswordError() ? 'true' : 'false'"
+                  [attr.aria-describedby]="getPasswordDescribedBy()"
+                />
+                <button
+                  type="button"
+                  class="btn-toggle-pwd"
+                  (click)="togglePasswordVisibility()"
+                  [attr.aria-pressed]="showPassword()"
+                  [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                >
+                  @if (showPassword()) {
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+              @if (showPasswordError()) {
+                <div id="password-error" class="form-error">
+                  <span aria-hidden="true">Error:</span>
+                  <span>Escribe una contraseña de al menos 8 caracteres.</span>
+                </div>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="tutor-confirm-password" class="form-label">
+                Confirma tu contraseña <span class="required-mark" aria-hidden="true">*</span>
+              </label>
+              <div class="input-wrapper">
+                <input
+                  id="tutor-confirm-password"
+                  name="confirmPassword"
+                  [type]="showConfirmPassword() ? 'text' : 'password'"
+                  formControlName="confirmPassword"
+                  class="form-control form-control-pwd"
+                  [class.is-invalid]="showConfirmError()"
+                  placeholder="Repite la misma contraseña"
+                  autocomplete="new-password"
+                  enterkeyhint="done"
+                  required
+                  [attr.aria-invalid]="showConfirmError() ? 'true' : 'false'"
+                  [attr.aria-describedby]="getConfirmDescribedBy()"
+                />
+                <button
+                  type="button"
+                  class="btn-toggle-pwd"
+                  (click)="toggleConfirmPasswordVisibility()"
+                  [attr.aria-pressed]="showConfirmPassword()"
+                  [attr.aria-label]="showConfirmPassword() ? 'Ocultar confirmación' : 'Mostrar confirmación'"
+                >
+                  @if (showConfirmPassword()) {
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+              @if (showConfirmError()) {
+                <div id="confirm-password-error" class="form-error">
+                  <span aria-hidden="true">Error:</span>
+                  <span>
+                    @if (activationForm.hasError('mismatch')) {
+                      Las contraseñas no coinciden. Verifica ambos campos.
+                    } @else {
+                      Confirma tu contraseña para continuar.
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary btn-full"
+              [disabled]="!token() || isSubmitting()"
+            >
+              @if (isSubmitting()) {
+                Activando cuenta...
+              } @else {
+                Activar cuenta de tutor
+              }
+            </button>
+          </form>
+
+          <div class="panel-footer">
+            <p class="reject-prompt">¿No reconoces este registro deportivo?</p>
+            <button type="button" class="btn-link-danger" (click)="openRejectDialog()" [disabled]="!token() || isSubmitting()">
+              Rechazar registro y desvincular atleta
+            </button>
+          </div>
+        } @else {
+          <!-- Vista directa cuando ingresa por /auth/rechazar-tutor -->
+          <header class="panel-header">
+            <h2 class="panel-title">Confirmar rechazo de inscripción</h2>
+            <p class="panel-subtitle">
+              Esta acción desvinculará al atleta de la academia y eliminará los datos precargados bajo protección LOPNNA.
+            </p>
+          </header>
+
+          <form (ngSubmit)="confirmRejection()" novalidate>
+            <div class="form-group">
+              <label for="direct-rejection-reason" class="form-label">Motivo del rechazo (opcional)</label>
+              <textarea
+                id="direct-rejection-reason"
+                name="rejectionReason"
+                [(ngModel)]="rejectionReason"
+                rows="3"
+                class="form-control textarea-control"
+                placeholder="Ej. No autoricé este registro o los datos no corresponden a mi representado."
+              ></textarea>
+            </div>
+
+            <div class="direct-reject-actions">
+              <a routerLink="/" class="btn btn-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-danger" [disabled]="!token() || isSubmitting()">
+                @if (isSubmitting()) {
+                  Procesando rechazo...
+                } @else {
+                  Confirmar rechazo definitivo
+                }
+              </button>
+            </div>
+          </form>
+        }
+      }
     </div>
+  </div>
 
-    <!-- Éxito -->
-    <div *ngIf="successMessage" class="p-6 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-4">
-      <span class="text-3xl block">✅</span>
-      <p class="text-sm font-semibold text-emerald-300">{{ successMessage }}</p>
-      <a routerLink="/login" class="inline-block px-6 py-2.5 rounded-xl bg-emerald-500 text-[#070B14] font-bold text-xs">
-        Iniciar Sesión
-      </a>
-    </div>
+  <!-- Modal nativo accesible para rechazo desde /auth/activar-tutor -->
+  <dialog #rejectDialog class="reject-dialog" aria-labelledby="reject-dialog-title" closedby="closerequest">
+    <div class="dialog-body">
+      <div class="dialog-badge">Acción irreversible</div>
+      <h2 id="reject-dialog-title" class="dialog-title">¿Rechazar registro oficial?</h2>
+      <p class="dialog-text">
+        Se desvinculará al representado de la organización que realizó la carga y se aplicará un borrado lógico inmediato de su ficha.
+      </p>
 
-    <!-- Formulario de Activación -->
-    <div *ngIf="!successMessage" class="space-y-5">
-      <div *ngIf="errorMessage" class="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
-        {{ errorMessage }}
+      <div class="form-group">
+        <label for="modal-rejection-reason" class="form-label">Motivo del rechazo (opcional)</label>
+        <textarea
+          id="modal-rejection-reason"
+          name="modalRejectionReason"
+          [(ngModel)]="rejectionReason"
+          rows="3"
+          class="form-control textarea-control"
+          placeholder="Indica brevemente el motivo si lo deseas..."
+        ></textarea>
       </div>
 
-      <div class="space-y-1.5">
-        <label class="text-xs font-semibold text-slate-300">Establece tu Contraseña</label>
-        <input type="password" [(ngModel)]="password" placeholder="Mínimo 8 caracteres"
-               class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500">
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-xs font-semibold text-slate-300">Confirma tu Contraseña</label>
-        <input type="password" [(ngModel)]="confirmPassword" placeholder="Repite tu contraseña"
-               class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-emerald-500">
-      </div>
-
-      <button (click)="activateAccount()" [disabled]="!token || isSubmitting"
-              class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-[#070B14] font-bold text-sm transition-all shadow-lg shadow-emerald-500/20">
-        {{ isSubmitting ? 'Activando cuenta...' : 'Activar Cuenta de Tutor' }}
-      </button>
-
-      <div class="border-t border-white/10 pt-4 text-center">
-        <button (click)="showRejectModal = true" class="text-xs text-red-400 hover:underline">
-          ¿No reconoces esta inscripción? Rechazar registro del atleta
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" autofocus (click)="closeRejectDialog()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" [disabled]="isSubmitting()" (click)="confirmRejection()">
+          @if (isSubmitting()) {
+            Procesando...
+          } @else {
+            Confirmar rechazo
+          }
         </button>
       </div>
     </div>
-
-    <!-- Modal de Confirmación de Rechazo -->
-    <div *ngIf="showRejectModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-[#0D1424] border border-white/15 rounded-2xl p-6 max-w-sm w-full space-y-4">
-        <h3 class="text-base font-bold text-white">¿Rechazar Registro Oficial?</h3>
-        <p class="text-xs text-slate-400">
-          Esta acción desvinculará a tu representado de la organización y aplicará un borrado lógico inmediato a la ficha del atleta.
-        </p>
-
-        <textarea [(ngModel)]="rejectionReason" placeholder="Motivo opcional del rechazo..."
-                  class="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:border-red-500 resize-none h-20"></textarea>
-
-        <div class="flex items-center gap-3">
-          <button (click)="showRejectModal = false" class="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold">
-            Cancelar
-          </button>
-          <button (click)="confirmRejection()" [disabled]="isSubmitting"
-                  class="flex-1 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold">
-            Confirmar Rechazo
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
+  </dialog>
+</section>
