@@ -23,6 +23,19 @@ export class AdminScoutsComponent implements OnInit {
   readonly isProcessing = signal<boolean>(false);
   readonly processingId = signal<string | null>(null);
 
+  // Pestaña Activa ('pending' | 'all')
+  readonly activeTab = signal<'pending' | 'all'>('pending');
+
+  // Listado Completo de Scouts para Permisos de Carga Masiva
+  readonly allScouts = signal<PendingScout[]>([]);
+  readonly isLoadingAll = signal<boolean>(false);
+  readonly updatingScoutId = signal<string | null>(null);
+  searchQuery = '';
+  currentPage = 0;
+  readonly pageSize = 20;
+  readonly totalElements = signal<number>(0);
+  readonly totalPages = signal<number>(0);
+
   // Notificaciones y Toasts
   readonly feedback = signal<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -34,6 +47,69 @@ export class AdminScoutsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadPendingScouts();
+    this.loadAllScouts();
+  }
+
+  setTab(tab: 'pending' | 'all'): void {
+    this.activeTab.set(tab);
+    if (tab === 'all') {
+      this.loadAllScouts();
+    }
+  }
+
+  loadAllScouts(page: number = 0): void {
+    this.currentPage = page;
+    this.isLoadingAll.set(true);
+    this.adminScoutService.getAllScouts(this.searchQuery, page, this.pageSize).subscribe({
+      next: (res) => {
+        this.allScouts.set(res.content);
+        this.totalElements.set(res.totalElements);
+        this.totalPages.set(res.totalPages);
+        this.isLoadingAll.set(false);
+      },
+      error: (err) => {
+        this.isLoadingAll.set(false);
+        this.showFeedback('error', 'Error al cargar el directorio de scouts: ' + (err.error?.message || err.message));
+      }
+    });
+  }
+
+  onSearchChange(): void {
+    this.loadAllScouts(0);
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.loadAllScouts(0);
+  }
+
+  toggleBulkImport(scout: PendingScout, event: Event): void {
+    const checkbox = event.target as HTMLInputElement;
+    const enabled = checkbox.checked;
+
+    this.updatingScoutId.set(scout.scoutProfileId);
+
+    this.adminScoutService.toggleBulkImport(scout.scoutProfileId, enabled).subscribe({
+      next: (updated) => {
+        this.allScouts.update((list) =>
+          list.map((s) => (s.scoutProfileId === scout.scoutProfileId ? { ...s, bulkImportEnabled: enabled } : s))
+        );
+        this.updatingScoutId.set(null);
+        this.showFeedback(
+          'success',
+          `Carga masiva ${enabled ? 'habilitada' : 'deshabilitada'} para ${scout.fullName}.`
+        );
+      },
+      error: (err) => {
+        // Revertir checkbox visualmente
+        checkbox.checked = !enabled;
+        this.updatingScoutId.set(null);
+        this.showFeedback(
+          'error',
+          'Error al modificar permiso de carga masiva: ' + (err.error?.message || err.message)
+        );
+      }
+    });
   }
 
   loadPendingScouts(): void {

@@ -17,6 +17,7 @@ export interface PendingScout {
   selfieUrl?: string;
   linkedinUrl?: string;
   verificationStatus: ScoutVerificationStatus;
+  bulkImportEnabled?: boolean;
   createdAt: string;
 }
 

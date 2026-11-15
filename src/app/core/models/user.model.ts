@@ -15,4 +15,5 @@ export interface User {
   scoutVerificationStatus?: ScoutVerificationStatus;
   rejectionReason?: string;
   isProfileCompleted?: boolean;
+  bulkImportEnabled?: boolean;
 }
