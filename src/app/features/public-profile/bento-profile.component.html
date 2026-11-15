@@ -21,6 +21,31 @@
     @if (athlete(); as a) {
       <!-- Contenedor Principal del Perfil Público Bento -->
       <main class="bento-container">
+      <!-- Barra Superior de Navegación y Breadcrumbs -->
+      <nav class="profile-top-nav" aria-label="Navegación de ficha deportiva">
+        <button
+          type="button"
+          class="btn-back-directory"
+          (click)="goBackToDirectory()"
+          aria-label="Volver al directorio de talentos">
+          <svg class="back-arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Volver al Directorio</span>
+        </button>
+
+        <ol class="profile-breadcrumbs" aria-label="Ruta de navegación">
+          <li class="breadcrumb-item">
+            <a routerLink="/scout/directory" class="breadcrumb-link">Directorio de Talentos</a>
+          </li>
+          <li class="breadcrumb-separator" aria-hidden="true">/</li>
+          <li class="breadcrumb-item breadcrumb-current" aria-current="page">
+            Ficha de {{ a.fullName }}
+          </li>
+        </ol>
+      </nav>
+
       <!-- Barra Superior de Identidad Institucional -->
       <header class="profile-header-bar">
         <div class="brand-tag">

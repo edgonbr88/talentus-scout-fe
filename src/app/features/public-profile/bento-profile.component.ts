@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed, PLATFORM_ID } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { CommonModule, Location, isPlatformBrowser } from '@angular/common';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AthleteService } from '../../core/services/athlete.service';
 import { SeoService } from '../../core/services/seo.service';
 import { AuthService } from '../../core/auth/auth.service';
@@ -19,11 +19,15 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
 })
 export class BentoProfileComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private location = inject(Location);
   private athleteService = inject(AthleteService);
   private seoService = inject(SeoService);
   private authService = inject(AuthService);
   private scoutDirectoryService = inject(ScoutDirectoryService);
   private platformId = inject(PLATFORM_ID);
+
+  private cameFromDirectory = false;
 
   public athlete = signal<PublicAthleteResponse | null>(null);
   public activeVideo = signal<PublicVideoDto | null>(null);
@@ -52,6 +56,10 @@ export class BentoProfileComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const navState = this.router.getCurrentNavigation()?.extras?.state;
+    const historyState = isPlatformBrowser(this.platformId) ? window.history.state : null;
+    this.cameFromDirectory = Boolean(navState?.['fromDirectory'] || historyState?.fromDirectory);
+
     this.route.paramMap.subscribe(params => {
       const slug = params.get('slug');
       if (slug) {
@@ -177,6 +185,14 @@ export class BentoProfileComponent implements OnInit {
         }
       }
     });
+  }
+
+  goBackToDirectory(): void {
+    if (this.cameFromDirectory && isPlatformBrowser(this.platformId) && window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+    this.router.navigate(['/scout/directory']);
   }
 
   closeAuthPrompt(): void {
