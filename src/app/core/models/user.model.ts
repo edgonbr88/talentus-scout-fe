@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'TUTOR' | 'SCOUT' | 'CLUB_VERIFIER' | 'VERIFIER_ORG';
+export type UserRole = 'ADMIN' | 'TUTOR' | 'SCOUT' | 'CLUB_VERIFIER' | 'VERIFIER_ORG' | 'ATHLETE';
 export type UserStatus = 'PENDING_VERIFICATION' | 'PENDING_EMAIL_VERIFICATION' | 'ACTIVE' | 'SUSPENDED';
 export type ScoutVerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 

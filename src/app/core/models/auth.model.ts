@@ -41,6 +41,17 @@ export interface RegisterTutorResponse {
   message?: string;
 }
 
+export interface RegisterAdultAthleteResponse {
+  userId: string;
+  athleteId: string;
+  token: string;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  slug: string;
+  message?: string;
+}
+
 export interface ResendVerificationEmailRequest {
   email: string;
 }

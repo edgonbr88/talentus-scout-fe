@@ -31,6 +31,11 @@ export const routes: Routes = [
     title: 'Registro y Acreditación de Scouts — Talentus Scout'
   },
   {
+    path: 'register-athlete',
+    loadComponent: () => import('./features/auth/register-athlete/register-athlete.component').then(m => m.RegisterAthleteComponent),
+    title: 'Registro de Atleta Mayor de Edad — Talentus Scout'
+  },
+  {
     path: 'auth/scout-pending-audit',
     loadComponent: () => import('./features/auth/scout-pending-audit/scout-pending-audit.component').then(m => m.ScoutPendingAuditComponent),
     title: 'Solicitud de Scout en Auditoría — Talentus Scout'

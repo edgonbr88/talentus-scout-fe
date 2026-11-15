@@ -1,0 +1,466 @@
+.auth-wrapper {
+  min-height: calc(100vh - 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: radial-gradient(circle at top center, rgba(16, 185, 129, 0.08) 0%, transparent 60%), #090d16;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 640px;
+  background-color: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 36px 32px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 25px rgba(16, 185, 129, 0.06);
+}
+
+.auth-header {
+  margin-bottom: 24px;
+}
+
+.brand-badge-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.badge-athlete {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 8px;
+}
+
+.auth-title {
+  font-size: 26px;
+  color: #f8fafc;
+  margin: 8px 0 6px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+/* Stepper */
+.stepper-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.step-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.step-pill.active {
+  color: #10b981;
+}
+
+.step-pill.completed {
+  color: #38bdf8;
+}
+
+.step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.step-pill.active .step-num {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.step-pill.completed .step-num {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+.step-divider {
+  width: 24px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Alertas */
+.error-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+/* Form Styles */
+.auth-form {
+  margin-top: 10px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.col-half {
+  flex: 1;
+  min-width: 0;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.form-control {
+  width: 100%;
+  padding: 11px 14px;
+  background-color: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #f8fafc;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  background-color: #0c1220;
+}
+
+.form-control.is-invalid {
+  border-color: #ef4444;
+}
+
+.file-input {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.field-error {
+  color: #f87171;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* Age Feedback */
+.age-feedback-container {
+  margin-bottom: 20px;
+}
+
+.age-success-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+.pill-icon {
+  font-weight: 900;
+  color: #10b981;
+}
+
+.underage-lopnna-card {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 14px;
+  padding: 16px;
+  animation: shake 0.3s ease-in-out;
+}
+
+.underage-header {
+  display: flex;
+  gap: 12px;
+}
+
+.underage-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.underage-title {
+  color: #fca5a5;
+  font-size: 14px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.underage-desc {
+  color: #fecaca;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.underage-action {
+  margin-top: 14px;
+  display: flex;
+}
+
+.btn-warning-pill {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+
+.btn-warning-pill:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+/* Legal Checkboxes */
+.legal-consents-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.consent-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.consent-checkbox input[type="checkbox"] {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: #10b981;
+}
+
+.checkbox-label {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.legal-link {
+  color: #38bdf8;
+  text-decoration: underline;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+}
+
+.legal-link:hover {
+  color: #7dd3fc;
+}
+
+/* Verification Box */
+.verification-box {
+  background: rgba(16, 185, 129, 0.04);
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.box-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.box-icon {
+  font-size: 20px;
+}
+
+.box-title {
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.box-desc {
+  color: #94a3b8;
+  font-size: 11px;
+  margin: 0;
+}
+
+/* Buttons */
+.form-actions {
+  margin-top: 20px;
+}
+
+.form-actions-split {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.form-actions-split .btn-primary {
+  flex: 2;
+}
+
+.form-actions-split .btn-secondary {
+  flex: 1;
+}
+
+.btn {
+  font-weight: 700;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  padding: 12px 20px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 12px 16px;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-lg {
+  font-size: 14px;
+  padding: 13px 24px;
+}
+
+/* Footer */
+.auth-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.login-link-text {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0 0 8px;
+}
+
+.tutor-switch {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.text-link {
+  color: #10b981;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}
+
+.text-center {
+  text-align: center;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@media (max-width: 600px) {
+  .register-card {
+    padding: 24px 20px;
+  }
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .form-actions-split {
+    flex-direction: column-reverse;
+  }
+}
