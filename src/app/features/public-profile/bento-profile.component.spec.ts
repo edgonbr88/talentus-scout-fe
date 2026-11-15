@@ -3,7 +3,8 @@ import { BentoProfileComponent } from './bento-profile.component';
 import { AthleteService } from '../../core/services/athlete.service';
 import { SeoService } from '../../core/services/seo.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { PublicAthleteResponse } from '../../core/models/athlete.model';
 
@@ -117,6 +118,50 @@ describe('BentoProfileComponent', () => {
   it('should show auth prompt modal when unauthenticated user clicks download CV', () => {
     component.downloadCvPdf();
     expect(component.showAuthPrompt()).toBeTrue();
+  });
+
+  it('should render top navigation bar with back button and breadcrumbs', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const backBtn = compiled.querySelector('.btn-back-directory');
+    const breadcrumbs = compiled.querySelector('.profile-breadcrumbs');
+
+    expect(backBtn).toBeTruthy();
+    expect(backBtn?.textContent).toContain('Volver al Directorio');
+    expect(backBtn?.getAttribute('aria-label')).toBe('Volver al directorio de talentos');
+    expect(breadcrumbs?.textContent).toContain('Directorio de Talentos');
+    expect(breadcrumbs?.textContent).toContain('Ficha de Gabriel Pérez');
+  });
+
+  it('should navigate to /scout/directory as fallback when not coming from directory', () => {
+    const router = TestBed.inject(Router);
+    const location = TestBed.inject(Location);
+    const navSpy = spyOn(router, 'navigate');
+    const backSpy = spyOn(location, 'back');
+
+    component.goBackToDirectory();
+
+    expect(backSpy).not.toHaveBeenCalled();
+    expect(navSpy).toHaveBeenCalledWith(['/scout/directory']);
+  });
+
+  it('should use Location.back() when navigation came from directory', () => {
+    const location = TestBed.inject(Location);
+    const router = TestBed.inject(Router);
+    const backSpy = spyOn(location, 'back');
+    const navSpy = spyOn(router, 'navigate');
+
+    window.history.replaceState({ fromDirectory: true }, '');
+    component.ngOnInit();
+    component.goBackToDirectory();
+
+    if (window.history.length > 1) {
+      expect(backSpy).toHaveBeenCalled();
+      expect(navSpy).not.toHaveBeenCalled();
+    } else {
+      expect(navSpy).toHaveBeenCalledWith(['/scout/directory']);
+    }
+
+    window.history.replaceState({}, '');
   });
 });
 

@@ -189,7 +189,7 @@
 
           <div class="athlete-info">
             <h2 class="athlete-name">
-              <a [routerLink]="['/atleta', athlete.slug]" class="athlete-link">
+              <a [routerLink]="['/atleta', athlete.slug]" [state]="{ fromDirectory: true }" class="athlete-link">
                 {{ athlete.firstName }} {{ athlete.lastName }}
               </a>
             </h2>
@@ -258,7 +258,7 @@
             <span>{{ contactingAthleteId() === athlete.id ? 'Conectando...' : 'Contactar Tutor' }}</span>
           </button>
 
-          <a [routerLink]="['/atleta', athlete.slug]" class="btn-full-profile">
+          <a [routerLink]="['/atleta', athlete.slug]" [state]="{ fromDirectory: true }" class="btn-full-profile">
             Ficha Completa
           </a>
         </div>
@@ -323,7 +323,7 @@
           <span>{{ contactingAthleteId() === activeVideoModal()?.id ? 'Conectando...' : 'Contactar Tutor' }}</span>
         </button>
 
-        <a [routerLink]="['/atleta', activeVideoModal()?.slug]" class="btn btn-secondary btn-sm"
+        <a [routerLink]="['/atleta', activeVideoModal()?.slug]" [state]="{ fromDirectory: true }" class="btn btn-secondary btn-sm"
           (click)="closeVideoModal()">
           Ver ficha y trayectoria completa →
         </a>
