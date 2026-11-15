@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, signal, computed, PLATFORM_ID } from '@angular/core';
 import { CommonModule, Location, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AthleteService } from '../../core/services/athlete.service';
 import { SeoService } from '../../core/services/seo.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ScoutDirectoryService } from '../../core/services/scout-directory.service';
-import { PublicAthleteResponse, PublicVideoDto } from '../../core/models/athlete.model';
+import { AchievementCategory, PublicAthleteResponse, PublicVideoDto } from '../../core/models/athlete.model';
 import { VideoPlayerComponent } from '../../shared/components/video-player/video-player.component';
 import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
 import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo.component';
@@ -13,7 +14,7 @@ import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-log
 @Component({
   selector: 'app-bento-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule, VideoPlayerComponent, MediaUrlPipe, BrandLogoComponent],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, VideoPlayerComponent, MediaUrlPipe, BrandLogoComponent],
   templateUrl: './bento-profile.component.html',
   styleUrls: ['./bento-profile.component.css']
 })
@@ -25,6 +26,7 @@ export class BentoProfileComponent implements OnInit {
   private seoService = inject(SeoService);
   private authService = inject(AuthService);
   private scoutDirectoryService = inject(ScoutDirectoryService);
+  private fb = inject(FormBuilder);
   private platformId = inject(PLATFORM_ID);
 
   private cameFromDirectory = false;
@@ -37,10 +39,39 @@ export class BentoProfileComponent implements OnInit {
   public isDownloadingCv = signal<boolean>(false);
   public isContacting = signal<boolean>(false);
   public showAuthPrompt = signal<boolean>(false);
+  public showAchievementModal = signal<boolean>(false);
+  public isSavingAchievement = signal<boolean>(false);
+  public achievementError = signal<string | null>(null);
+  public achievementSuccess = signal<string | null>(null);
+
+  public readonly achievementCategories: { value: AchievementCategory; label: string }[] = [
+    { value: 'TORNEO', label: 'Título o Torneo' },
+    { value: 'INDIVIDUAL', label: 'Distinción Individual (MVP / Goleador)' },
+    { value: 'CONVOCATORIA', label: 'Convocatoria Oficial' },
+    { value: 'OTRO', label: 'Otro Logro Deportivo' }
+  ];
+
+  public achievementForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(150)]],
+    category: ['TORNEO' as AchievementCategory, [Validators.required]],
+    achievementDate: [''],
+    description: ['', [Validators.maxLength(500)]]
+  });
 
   public isScout = computed(() => {
     const role = this.authService.currentUser()?.role;
     return role === 'SCOUT' || role === 'ADMIN';
+  });
+
+  public canRegisterClubAchievement = computed(() => {
+    const user = this.authService.currentUser();
+    const a = this.athlete();
+    if (!user || !a) return false;
+    if (user.role === 'ADMIN') return true;
+    if (user.role !== 'SCOUT' || user.scoutVerificationStatus !== 'APPROVED') return false;
+    const clubName = a.club?.name?.trim().toLowerCase();
+    const scoutOrg = user.organizationName?.trim().toLowerCase();
+    return Boolean(clubName && scoutOrg && clubName === scoutOrg);
   });
 
   public birthYear = computed(() => {
@@ -193,6 +224,64 @@ export class BentoProfileComponent implements OnInit {
       return;
     }
     this.router.navigate(['/scout/directory']);
+  }
+
+  openAchievementModal(): void {
+    this.achievementError.set(null);
+    this.achievementForm.reset({
+      title: '',
+      category: 'TORNEO',
+      achievementDate: '',
+      description: ''
+    });
+    this.showAchievementModal.set(true);
+  }
+
+  closeAchievementModal(): void {
+    if (this.isSavingAchievement()) return;
+    this.showAchievementModal.set(false);
+    this.achievementError.set(null);
+  }
+
+  submitAchievement(): void {
+    if (this.achievementForm.invalid || this.isSavingAchievement()) {
+      this.achievementForm.markAllAsTouched();
+      return;
+    }
+
+    const a = this.athlete();
+    if (!a) return;
+
+    const raw = this.achievementForm.getRawValue();
+    this.isSavingAchievement.set(true);
+    this.achievementError.set(null);
+
+    this.scoutDirectoryService.createAthleteAchievement(a.id, {
+      title: raw.title.trim(),
+      category: raw.category,
+      achievementDate: raw.achievementDate || undefined,
+      description: raw.description?.trim() || undefined
+    }).subscribe({
+      next: (createdBadge) => {
+        this.isSavingAchievement.set(false);
+        this.athlete.update(curr => curr ? {
+          ...curr,
+          badges: [createdBadge, ...(curr.badges || [])]
+        } : curr);
+        this.showAchievementModal.set(false);
+        this.achievementSuccess.set('Logro deportivo certificado en el perfil del atleta.');
+        setTimeout(() => this.achievementSuccess.set(null), 3500);
+      },
+      error: (err) => {
+        this.isSavingAchievement.set(false);
+        const backendMessage = err?.error?.message;
+        if (err?.status === 403) {
+          this.achievementError.set(backendMessage || 'Solo puedes certificar logros de atletas que pertenezcan a tu mismo club u organización.');
+        } else {
+          this.achievementError.set(backendMessage || 'No se pudo registrar el logro. Verifica los datos e intenta nuevamente.');
+        }
+      }
+    });
   }
 
   closeAuthPrompt(): void {

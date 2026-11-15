@@ -39,6 +39,14 @@ export interface AthleteMetricsDto {
 }
 
 export type BadgeType = 'FEDERATION_LICENSE' | 'CLUB_AFFILIATION' | 'MEDICAL_ANTHRO' | 'SCOUT_ENDORSEMENT' | 'SPORT_ACHIEVEMENT';
+export type AchievementCategory = 'TORNEO' | 'INDIVIDUAL' | 'CONVOCATORIA' | 'OTRO';
+
+export interface CreateAthleteAchievementRequest {
+  title: string;
+  category: AchievementCategory;
+  achievementDate?: string;
+  description?: string;
+}
 
 export interface PublicBadgeDto {
   type: BadgeType;
