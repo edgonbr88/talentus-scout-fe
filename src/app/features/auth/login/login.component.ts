@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { SocialAuthManagerService } from '../../../core/auth/social-auth-manager.service';
 import { OauthConfigModalComponent } from '../../../shared/components/oauth-config-modal/oauth-config-modal.component';
 import { BrandLogoComponent } from '../../../shared/components/brand-logo/brand-logo.component';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -169,6 +170,7 @@ export class LoginComponent implements OnInit {
   private socialAuthManager = inject(SocialAuthManagerService);
   private router = inject(Router);
 
+  readonly isProduction = environment.production;
   isLoading = false;
   errorMessage: string | null = null;
   unverifiedEmail: string | null = null;
@@ -186,6 +188,7 @@ export class LoginComponent implements OnInit {
     if (this.socialAuthManager.handleOAuthCallbackIfPresent()) {
       return;
     }
+    void this.socialAuthManager.ensureOAuthConfigLoaded();
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -195,7 +198,11 @@ export class LoginComponent implements OnInit {
 
   loginWithGoogle(): void {
     if (!this.socialAuthManager.hasGoogleClientId()) {
-      this.openConfigModal('google');
+      if (this.isProduction) {
+        this.errorMessage = 'El inicio de sesión con Google no está habilitado en este entorno.';
+      } else {
+        this.openConfigModal('google');
+      }
       return;
     }
     this.startOAuthFlow('google');
@@ -203,13 +210,18 @@ export class LoginComponent implements OnInit {
 
   loginWithMicrosoft(): void {
     if (!this.socialAuthManager.hasMicrosoftClientId()) {
-      this.openConfigModal('microsoft');
+      if (this.isProduction) {
+        this.errorMessage = 'El inicio de sesión con Microsoft no está habilitado en este entorno.';
+      } else {
+        this.openConfigModal('microsoft');
+      }
       return;
     }
     this.startOAuthFlow('microsoft');
   }
 
   openConfigModal(provider: 'google' | 'microsoft' | 'all'): void {
+    if (this.isProduction) return;
     this.configModalProvider = provider;
     this.showConfigModal = true;
   }

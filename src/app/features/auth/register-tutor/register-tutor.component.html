@@ -50,12 +50,14 @@
         <span>Crear cuenta rápida con Microsoft</span>
       </button>
 
-      <div style="text-align: center; margin-top: 4px;">
-        <button type="button" (click)="openConfigModal('all')" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 4px;">
-          <span>⚙️</span>
-          <span>Configurar Client IDs de OAuth2</span>
-        </button>
-      </div>
+      @if (!isProduction) {
+        <div style="text-align: center; margin-top: 4px;">
+          <button type="button" (click)="openConfigModal('all')" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 4px;">
+            <span>⚙️</span>
+            <span>Configurar Client IDs de OAuth2</span>
+          </button>
+        </div>
+      }
     </div>
 
     <div class="auth-divider">
@@ -434,7 +436,7 @@
   </div>
 </div>
 
-@if (showConfigModal) {
+@if (!isProduction && showConfigModal) {
   <app-oauth-config-modal
     [targetProvider]="configModalProvider"
     (saved)="onConfigSaved($event)"

@@ -1,4 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface OAuthConfig {
@@ -6,32 +8,77 @@ export interface OAuthConfig {
   microsoftClientId: string;
 }
 
+export interface OAuthPublicConfigResponse {
+  googleClientId: string;
+  microsoftClientId: string;
+  mockEnabled: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class SocialAuthManagerService {
+  private readonly http = inject(HttpClient, { optional: true });
+
   private readonly GOOGLE_KEY = 'talentus_google_client_id';
   private readonly MICROSOFT_KEY = 'talentus_microsoft_client_id';
   private readonly PENDING_TOKEN_KEY = 'talentus_oauth_pending_token';
   private readonly PENDING_PROVIDER_KEY = 'talentus_oauth_pending_provider';
 
+  private runtimeGoogleClientId = '';
+  private runtimeMicrosoftClientId = '';
+  private configPromise: Promise<void> | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined' && this.http && (!environment.googleClientId || !environment.microsoftClientId)) {
+      void this.ensureOAuthConfigLoaded();
+    }
+  }
+
+  ensureOAuthConfigLoaded(): Promise<void> {
+    if (typeof window === 'undefined' || !this.http) {
+      return Promise.resolve();
+    }
+    if (this.configPromise) {
+      return this.configPromise;
+    }
+
+    const endpoint = `${environment.apiBaseUrl}/auth/oauth-config`;
+    this.configPromise = firstValueFrom(this.http.get<OAuthPublicConfigResponse>(endpoint))
+      .then((res) => {
+        this.runtimeGoogleClientId = (res?.googleClientId || '').trim();
+        this.runtimeMicrosoftClientId = (res?.microsoftClientId || '').trim();
+      })
+      .catch(() => {
+        // Silencioso: mantiene los valores de environment o localStorage si están disponibles
+      });
+
+    return this.configPromise;
+  }
+
   getGoogleClientId(): string {
     if (typeof window === 'undefined') return '';
-    return localStorage.getItem(this.GOOGLE_KEY) || environment.googleClientId || '';
+    if (environment.production) {
+      return environment.googleClientId || this.runtimeGoogleClientId || '';
+    }
+    return localStorage.getItem(this.GOOGLE_KEY) || environment.googleClientId || this.runtimeGoogleClientId || '';
   }
 
   setGoogleClientId(id: string): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || environment.production) return;
     localStorage.setItem(this.GOOGLE_KEY, id.trim());
   }
 
   getMicrosoftClientId(): string {
     if (typeof window === 'undefined') return '';
-    return localStorage.getItem(this.MICROSOFT_KEY) || environment.microsoftClientId || '';
+    if (environment.production) {
+      return environment.microsoftClientId || this.runtimeMicrosoftClientId || '';
+    }
+    return localStorage.getItem(this.MICROSOFT_KEY) || environment.microsoftClientId || this.runtimeMicrosoftClientId || '';
   }
 
   setMicrosoftClientId(id: string): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || environment.production) return;
     localStorage.setItem(this.MICROSOFT_KEY, id.trim());
   }
 

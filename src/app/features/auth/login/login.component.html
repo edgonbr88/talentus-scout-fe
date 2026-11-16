@@ -64,12 +64,14 @@
         <span>Continuar con Microsoft</span>
       </button-->
 
-      <div class="oauth-config-trigger">
-        <button type="button" class="btn-config-oauth" (click)="openConfigModal('all')">
-          <span>⚙️</span>
-          <span>Configurar Client IDs de OAuth2</span>
-        </button>
-      </div>
+      @if (!isProduction) {
+        <div class="oauth-config-trigger">
+          <button type="button" class="btn-config-oauth" (click)="openConfigModal('all')">
+            <span>⚙️</span>
+            <span>Configurar Client IDs de OAuth2</span>
+          </button>
+        </div>
+      }
     </div>
 
     <div class="auth-divider">
@@ -130,7 +132,7 @@
   </div>
 </div>
 
-@if (showConfigModal) {
+@if (!isProduction && showConfigModal) {
 <app-oauth-config-modal [targetProvider]="configModalProvider" (saved)="onConfigSaved($event)"
   (closed)="closeConfigModal()"></app-oauth-config-modal>
 }
