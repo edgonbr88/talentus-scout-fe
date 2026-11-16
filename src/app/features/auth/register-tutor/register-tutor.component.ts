@@ -682,11 +682,7 @@ export class RegisterTutorComponent {
         obs.subscribe({
           next: (res) => {
             this.isLoading = false;
-            if (res.needsProfileCompletion) {
-              this.router.navigate(['/auth/complete-profile']);
-            } else {
-              this.router.navigate(['/dashboard']);
-            }
+            this.authService.navigateByRole(res.role, res.needsProfileCompletion);
           },
           error: (err) => {
             this.isLoading = false;

@@ -21,6 +21,11 @@ export const routes: Routes = [
     title: 'Iniciar Sesión — Talentus Scout'
   },
   {
+    path: 'auth/login',
+    component: LoginComponent,
+    title: 'Iniciar Sesión — Talentus Scout'
+  },
+  {
     path: 'register-tutor',
     component: RegisterTutorComponent,
     title: 'Registro de Tutor y Representante Legal — Talentus Scout'
