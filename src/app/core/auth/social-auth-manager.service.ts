@@ -59,9 +59,9 @@ export class SocialAuthManagerService {
   getGoogleClientId(): string {
     if (typeof window === 'undefined') return '';
     if (environment.production) {
-      return environment.googleClientId || this.runtimeGoogleClientId || '';
+      return this.runtimeGoogleClientId || environment.googleClientId || '';
     }
-    return localStorage.getItem(this.GOOGLE_KEY) || environment.googleClientId || this.runtimeGoogleClientId || '';
+    return localStorage.getItem(this.GOOGLE_KEY) || this.runtimeGoogleClientId || environment.googleClientId || '';
   }
 
   setGoogleClientId(id: string): void {
@@ -72,9 +72,9 @@ export class SocialAuthManagerService {
   getMicrosoftClientId(): string {
     if (typeof window === 'undefined') return '';
     if (environment.production) {
-      return environment.microsoftClientId || this.runtimeMicrosoftClientId || '';
+      return this.runtimeMicrosoftClientId || environment.microsoftClientId || '';
     }
-    return localStorage.getItem(this.MICROSOFT_KEY) || environment.microsoftClientId || this.runtimeMicrosoftClientId || '';
+    return localStorage.getItem(this.MICROSOFT_KEY) || this.runtimeMicrosoftClientId || environment.microsoftClientId || '';
   }
 
   setMicrosoftClientId(id: string): void {
