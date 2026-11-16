@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PageResponse, ScoutDirectoryAthleteItem, ScoutDirectoryFilters } from '../models/scout-directory.model';
 import { ContactClickResponse } from '../models/scout-contact.model';
+import { CreateAthleteAchievementRequest, PublicBadgeDto } from '../models/athlete.model';
 
 @Injectable({
   providedIn: 'root'
@@ -56,5 +57,12 @@ export class ScoutDirectoryService {
 
   logAthleteView(athleteId: string): Observable<void> {
     return this.http.post<void>(`/api/v1/scouts/log-view?athleteId=${athleteId}`, {});
+  }
+
+  createAthleteAchievement(
+    athleteId: string,
+    payload: CreateAthleteAchievementRequest
+  ): Observable<PublicBadgeDto> {
+    return this.http.post<PublicBadgeDto>(`/api/v1/scout/athletes/${athleteId}/achievements`, payload);
   }
 }

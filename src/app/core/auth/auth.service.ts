@@ -225,7 +225,8 @@ export class AuthService {
           scoutVerificationStatus: profile.scoutVerificationStatus,
           rejectionReason: profile.rejectionReason,
           isProfileCompleted: profile.isProfileCompleted ?? true,
-          bulkImportEnabled: profile.bulkImportEnabled ?? false
+          bulkImportEnabled: profile.bulkImportEnabled ?? false,
+          organizationName: profile.organizationName
         });
       }),
       catchError((err) => {

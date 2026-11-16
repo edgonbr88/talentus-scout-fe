@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal, WritableSignal } from '@angular/core';
 import { BentoProfileComponent } from './bento-profile.component';
 import { AthleteService } from '../../core/services/athlete.service';
 import { SeoService } from '../../core/services/seo.service';
@@ -16,6 +17,7 @@ describe('BentoProfileComponent', () => {
   let athleteServiceSpy: jasmine.SpyObj<AthleteService>;
   let seoServiceSpy: jasmine.SpyObj<SeoService>;
   let scoutDirectoryServiceSpy: jasmine.SpyObj<ScoutDirectoryService>;
+  let currentUserSignal: WritableSignal<any>;
   let authServiceSpy: any;
 
   const mockAthlete: PublicAthleteResponse = {
@@ -62,12 +64,23 @@ describe('BentoProfileComponent', () => {
   beforeEach(async () => {
     athleteServiceSpy = jasmine.createSpyObj('AthleteService', ['getPublicAthleteBySlug', 'downloadAthleteCvPdf']);
     seoServiceSpy = jasmine.createSpyObj('SeoService', ['setAthleteProfileMeta']);
-    scoutDirectoryServiceSpy = jasmine.createSpyObj('ScoutDirectoryService', ['logAthleteView', 'contactAthleteTutor']);
+    scoutDirectoryServiceSpy = jasmine.createSpyObj('ScoutDirectoryService', [
+      'logAthleteView',
+      'contactAthleteTutor',
+      'createAthleteAchievement'
+    ]);
     scoutDirectoryServiceSpy.logAthleteView.and.returnValue(of(null as any));
     scoutDirectoryServiceSpy.contactAthleteTutor.and.returnValue(of({ whatsappUrl: 'https://wa.me/test' } as any));
+    scoutDirectoryServiceSpy.createAthleteAchievement.and.returnValue(of({
+      type: 'SPORT_ACHIEVEMENT',
+      title: 'Campeón Torneo Apertura',
+      verified: true,
+      organizationName: 'Deportivo Miranda Sub-16'
+    }));
+    currentUserSignal = signal<any>(null);
     authServiceSpy = {
       isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(false),
-      currentUser: jasmine.createSpy('currentUser').and.returnValue(null)
+      currentUser: currentUserSignal
     };
 
     athleteServiceSpy.getPublicAthleteBySlug.and.returnValue(of(mockAthlete));
@@ -162,6 +175,55 @@ describe('BentoProfileComponent', () => {
     }
 
     window.history.replaceState({}, '');
+  });
+
+  it('should allow approved scout of same club to register achievement and update badges reactively', () => {
+    currentUserSignal.set({
+      id: 'scout-1',
+      email: 'scout@miranda.com',
+      fullName: 'Scout Miranda',
+      role: 'SCOUT',
+      scoutVerificationStatus: 'APPROVED',
+      organizationName: 'Deportivo Miranda Sub-16'
+    });
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(component.canRegisterClubAchievement()).toBeTrue();
+    expect(compiled.querySelector('.btn-register-achievement')).toBeTruthy();
+
+    component.openAchievementModal();
+    component.achievementForm.setValue({
+      title: 'Campeón Torneo Apertura',
+      category: 'TORNEO',
+      achievementDate: '2026-06-15',
+      description: 'Final estatal'
+    });
+    component.submitAchievement();
+
+    expect(scoutDirectoryServiceSpy.createAthleteAchievement).toHaveBeenCalledWith('test-uuid-001', {
+      title: 'Campeón Torneo Apertura',
+      category: 'TORNEO',
+      achievementDate: '2026-06-15',
+      description: 'Final estatal'
+    });
+    expect(component.athlete()?.badges[0].title).toBe('Campeón Torneo Apertura');
+    expect(component.showAchievementModal()).toBeFalse();
+  });
+
+  it('should not allow scout from a different club to register achievement', () => {
+    currentUserSignal.set({
+      id: 'scout-2',
+      email: 'scout@otro.com',
+      fullName: 'Scout Otro',
+      role: 'SCOUT',
+      scoutVerificationStatus: 'APPROVED',
+      organizationName: 'Caracas FC'
+    });
+    fixture.detectChanges();
+
+    expect(component.canRegisterClubAchievement()).toBeFalse();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.btn-register-achievement')).toBeNull();
   });
 });
 
