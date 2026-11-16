@@ -239,7 +239,17 @@
         <section class="bento-card card-badges">
           <div class="card-header-clean">
             <h2 class="card-title">Insignias de Confianza</h2>
-            <span class="card-indicator gold">Validado</span>
+            <div class="badges-header-actions">
+              <span class="card-indicator gold">Validado</span>
+              @if (canRegisterClubAchievement()) {
+                <button
+                  type="button"
+                  class="btn-register-achievement"
+                  (click)="openAchievementModal()">
+                  + Registrar Logro de Club
+                </button>
+              }
+            </div>
           </div>
 
           <div class="badges-list">
@@ -347,10 +357,117 @@
         </div>
       }
 
+      <!-- Modal para registrar logro deportivo del club -->
+      @if (showAchievementModal()) {
+        <div class="modal-backdrop-blur" (click)="closeAchievementModal()">
+          <div
+            class="achievement-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="achievement-modal-title"
+            (click)="$event.stopPropagation()">
+            <div class="achievement-modal-header">
+              <div>
+                <h3 id="achievement-modal-title" class="achievement-modal-title">Certificar logro deportivo</h3>
+                <p class="achievement-modal-subtitle">
+                  Se publicará como insignia oficial aprobada bajo el respaldo de
+                  <strong>{{ a.club?.name || 'tu organización' }}</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn-modal-close"
+                (click)="closeAchievementModal()"
+                aria-label="Cerrar modal de logro">
+                ×
+              </button>
+            </div>
+
+            <form [formGroup]="achievementForm" (ngSubmit)="submitAchievement()" class="achievement-form">
+              <div class="form-field">
+                <label for="achievementTitle" class="form-label">Título del logro</label>
+                <input
+                  id="achievementTitle"
+                  type="text"
+                  formControlName="title"
+                  class="form-input"
+                  placeholder="Ej: Campeón Torneo Apertura Sub-16"
+                  maxlength="150" />
+                @if (achievementForm.controls.title.touched && achievementForm.controls.title.invalid) {
+                  <span class="field-error">Ingresa un título válido (máximo 150 caracteres).</span>
+                }
+              </div>
+
+              <div class="form-row-two">
+                <div class="form-field">
+                  <label for="achievementCategory" class="form-label">Categoría</label>
+                  <select id="achievementCategory" formControlName="category" class="form-input">
+                    @for (cat of achievementCategories; track cat.value) {
+                      <option [value]="cat.value">{{ cat.label }}</option>
+                    }
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label for="achievementDate" class="form-label">Fecha (opcional)</label>
+                  <input
+                    id="achievementDate"
+                    type="date"
+                    formControlName="achievementDate"
+                    class="form-input" />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="achievementDescription" class="form-label">Detalles del logro (opcional)</label>
+                <textarea
+                  id="achievementDescription"
+                  formControlName="description"
+                  class="form-input form-textarea"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Contexto del torneo, premio individual o méritos destacados"></textarea>
+                @if (achievementForm.controls.description.touched && achievementForm.controls.description.invalid) {
+                  <span class="field-error">La descripción no puede superar los 500 caracteres.</span>
+                }
+              </div>
+
+              @if (achievementError()) {
+                <div class="achievement-error-banner" role="alert">
+                  {{ achievementError() }}
+                </div>
+              }
+
+              <div class="achievement-modal-actions">
+                <button
+                  type="button"
+                  class="btn-prompt-secondary"
+                  (click)="closeAchievementModal()"
+                  [disabled]="isSavingAchievement()">
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="btn-achievement-submit"
+                  [disabled]="isSavingAchievement()">
+                  {{ isSavingAchievement() ? 'Certificando...' : 'Certificar logro' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      }
+
       <!-- Notificación flotante de enlace copiado -->
       @if (copiedNotification()) {
         <div class="toast-notification">
           <span>Enlace copiado al portapapeles</span>
+        </div>
+      }
+
+      @if (achievementSuccess()) {
+        <div class="toast-notification">
+          <span>{{ achievementSuccess() }}</span>
         </div>
       }
     </main>

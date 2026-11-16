@@ -70,6 +70,7 @@ export interface UserProfileResponse {
   rejectionReason?: string;
   isProfileCompleted?: boolean;
   bulkImportEnabled?: boolean;
+  organizationName?: string;
 }
 
 export interface SocialAuthRequest {

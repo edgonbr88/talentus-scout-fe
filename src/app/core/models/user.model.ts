@@ -16,4 +16,5 @@ export interface User {
   rejectionReason?: string;
   isProfileCompleted?: boolean;
   bulkImportEnabled?: boolean;
+  organizationName?: string;
 }
