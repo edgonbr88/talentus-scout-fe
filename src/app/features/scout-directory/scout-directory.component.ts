@@ -39,6 +39,10 @@ export class ScoutDirectoryComponent implements OnInit {
 
   // Modal de Reproducción Rápida
   activeVideoModal = signal<ScoutDirectoryAthleteItem | null>(null);
+  modalClubLogoFailed = signal<boolean>(false);
+
+  // Control reactivo de escudos de club con error de carga
+  failedClubLogos = signal<Set<string>>(new Set<string>());
 
   // Panel de Filtros Desplegable
   showAdvancedFilters = signal<boolean>(false);
@@ -231,12 +235,30 @@ export class ScoutDirectoryComponent implements OnInit {
 
   openVideoModal(athlete: ScoutDirectoryAthleteItem): void {
     if (athlete.hasVideo && athlete.featuredVideoPlaybackUrl) {
+      this.modalClubLogoFailed.set(false);
       this.activeVideoModal.set(athlete);
     }
   }
 
   closeVideoModal(): void {
     this.activeVideoModal.set(null);
+    this.modalClubLogoFailed.set(false);
+  }
+
+  onClubLogoError(athleteId: string): void {
+    this.failedClubLogos.update((prev) => {
+      const updated = new Set(prev);
+      updated.add(athleteId);
+      return updated;
+    });
+  }
+
+  isClubLogoLoaded(athlete: ScoutDirectoryAthleteItem): boolean {
+    return !!athlete.clubLogoUrl && !this.failedClubLogos().has(athlete.id);
+  }
+
+  onModalClubLogoError(): void {
+    this.modalClubLogoFailed.set(true);
   }
 
   @HostListener('window:keydown.escape')

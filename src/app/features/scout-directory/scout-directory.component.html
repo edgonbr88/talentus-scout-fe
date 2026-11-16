@@ -194,8 +194,17 @@
               </a>
             </h2>
             <div class="athlete-club">
-              <span class="club-icon">🏟️</span>
-              <span class="club-name">{{ athlete.clubName || 'Club Independiente' }}</span>
+              @if (isClubLogoLoaded(athlete)) {
+              <img [src]="athlete.clubLogoUrl! | mediaUrl" [alt]="athlete.clubName || 'Escudo del club'"
+                class="club-logo-mini" loading="lazy" (error)="onClubLogoError(athlete.id)" />
+              } @else {
+              <span class="club-icon-fallback" aria-hidden="true">
+                <svg class="club-crest-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </span>
+              }
+              <span class="club-name" [title]="athlete.clubName || 'Club Independiente'">{{ athlete.clubName || 'Club Independiente' }}</span>
             </div>
           </div>
         </div>
@@ -296,9 +305,24 @@
           <h3 class="modal-athlete-name">
             {{ activeVideoModal()?.firstName }} {{ activeVideoModal()?.lastName }}
           </h3>
-          <span class="modal-video-title">
-            {{ activeVideoModal()?.featuredVideoTitle || 'Compilado Destacado' }} • {{ activeVideoModal()?.clubName }}
-          </span>
+          <div class="modal-video-meta">
+            <span class="modal-video-title">{{ activeVideoModal()?.featuredVideoTitle || 'Compilado Destacado' }}</span>
+            <span class="meta-divider">•</span>
+            <div class="modal-club-badge">
+              @if (activeVideoModal()?.clubLogoUrl && !modalClubLogoFailed()) {
+              <img [src]="activeVideoModal()!.clubLogoUrl! | mediaUrl"
+                [alt]="activeVideoModal()?.clubName || 'Escudo del club'" class="modal-club-logo"
+                (error)="onModalClubLogoError()" />
+              } @else {
+              <span class="modal-club-icon-fallback" aria-hidden="true">
+                <svg class="club-crest-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </span>
+              }
+              <span class="modal-club-name">{{ activeVideoModal()?.clubName || 'Club Independiente' }}</span>
+            </div>
+          </div>
         </div>
 
         <button type="button" class="modal-close-btn" (click)="closeVideoModal()" aria-label="Cerrar modal de video">
