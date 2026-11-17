@@ -7,6 +7,7 @@ import { SocialAuthManagerService } from '../../../core/auth/social-auth-manager
 import { OauthConfigModalComponent } from '../../../shared/components/oauth-config-modal/oauth-config-modal.component';
 import { BrandLogoComponent } from '../../../shared/components/brand-logo/brand-logo.component';
 import { WebcamSelfieCaptureComponent } from '../../../shared/components/webcam-selfie-capture/webcam-selfie-capture.component';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-register-tutor',
@@ -493,6 +494,7 @@ export class RegisterTutorComponent {
   selectedFile: File | null = null;
   fileError: string | null = null;
 
+  readonly isProduction = environment.production;
   showConfigModal = false;
   configModalProvider: 'google' | 'microsoft' | 'all' = 'all';
 
@@ -633,7 +635,11 @@ export class RegisterTutorComponent {
 
   registerWithGoogle(): void {
     if (!this.socialAuthManager.hasGoogleClientId()) {
-      this.openConfigModal('google');
+      if (this.isProduction) {
+        this.errorMessage = 'El registro rápido con Google no está habilitado en este entorno.';
+      } else {
+        this.openConfigModal('google');
+      }
       return;
     }
     this.startOAuthFlow('google');
@@ -641,13 +647,18 @@ export class RegisterTutorComponent {
 
   registerWithMicrosoft(): void {
     if (!this.socialAuthManager.hasMicrosoftClientId()) {
-      this.openConfigModal('microsoft');
+      if (this.isProduction) {
+        this.errorMessage = 'El registro rápido con Microsoft no está habilitado en este entorno.';
+      } else {
+        this.openConfigModal('microsoft');
+      }
       return;
     }
     this.startOAuthFlow('microsoft');
   }
 
   openConfigModal(provider: 'google' | 'microsoft' | 'all'): void {
+    if (this.isProduction) return;
     this.configModalProvider = provider;
     this.showConfigModal = true;
   }
