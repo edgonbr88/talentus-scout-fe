@@ -245,21 +245,7 @@ export class LoginComponent implements OnInit {
         obs.subscribe({
           next: (res) => {
             this.isLoading = false;
-            if (res.needsProfileCompletion) {
-              this.router.navigate(['/auth/complete-profile']);
-            } else {
-              if (res.role === 'ADMIN') {
-                this.router.navigate(['/admin/scouts']);
-              } else if (res.role === 'SCOUT') {
-                if (this.authService.isVerifiedScout()) {
-                  this.router.navigate(['/scout/directory']);
-                } else {
-                  this.router.navigate(['/auth/scout-pending-audit']);
-                }
-              } else {
-                this.router.navigate(['/dashboard']);
-              }
-            }
+            this.authService.navigateByRole(res.role, res.needsProfileCompletion);
           },
           error: (err) => {
             this.isLoading = false;
@@ -292,17 +278,7 @@ export class LoginComponent implements OnInit {
     this.authService.login(this.loginForm.value).subscribe({
       next: (res) => {
         this.isLoading = false;
-        if (res.role === 'ADMIN') {
-          this.router.navigate(['/admin/scouts']);
-        } else if (res.role === 'SCOUT') {
-          if (this.authService.isVerifiedScout()) {
-            this.router.navigate(['/scout/directory']);
-          } else {
-            this.router.navigate(['/auth/scout-pending-audit']);
-          }
-        } else {
-          this.router.navigate(['/dashboard']);
-        }
+        this.authService.navigateByRole(res.role);
       },
       error: (err) => {
         this.isLoading = false;
