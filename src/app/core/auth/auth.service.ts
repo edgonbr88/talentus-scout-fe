@@ -45,7 +45,7 @@ export class AuthService {
     (this.currentUser()?.scoutVerificationStatus === 'APPROVED' || this.currentUser()?.status === 'ACTIVE')
   );
   readonly canAccessDirectory = computed(() => this.isAdmin() || this.isVerifiedScout());
-  readonly canAccessBulkImport = computed(() => this.isAdmin() || (this.isVerifiedScout() && this.currentUser()?.bulkImportEnabled === true));
+  readonly canAccessBulkImport = computed(() => this.isVerifiedScout() && this.currentUser()?.bulkImportEnabled === true);
 
   constructor() {
     if (this.token()) {
@@ -233,6 +233,27 @@ export class AuthService {
         return throwError(() => err);
       })
     );
+  }
+
+  navigateByRole(role?: string, needsProfileCompletion?: boolean): void {
+    if (needsProfileCompletion) {
+      this.router.navigate(['/auth/complete-profile']);
+      return;
+    }
+    const targetRole = role || this.currentUser()?.role;
+    if (targetRole === 'ADMIN') {
+      this.router.navigate(['/admin/scouts']);
+    } else if (targetRole === 'SCOUT') {
+      if (this.isVerifiedScout()) {
+        this.router.navigate(['/scout/directory']);
+      } else {
+        this.router.navigate(['/auth/scout-pending-audit']);
+      }
+    } else if (targetRole === 'VERIFIER_ORG') {
+      this.router.navigate(['/scout/directory']);
+    } else {
+      this.router.navigate(['/dashboard']);
+    }
   }
 
   logout(): void {
