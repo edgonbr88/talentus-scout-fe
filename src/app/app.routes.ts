@@ -8,6 +8,7 @@ import { authGuard } from './core/auth/auth.guard';
 import { adminGuard } from './core/auth/admin.guard';
 import { scoutGuard } from './core/auth/scout.guard';
 import { tutorGuard } from './core/auth/tutor.guard';
+import { bulkImportGuard } from './core/auth/bulk-import.guard';
 
 export const routes: Routes = [
   {
@@ -114,7 +115,7 @@ export const routes: Routes = [
   {
     path: 'scout/bulk-import',
     loadComponent: () => import('./features/scout-bulk-import/scout-bulk-import.component').then(m => m.ScoutBulkImportComponent),
-    canActivate: [authGuard, scoutGuard],
+    canActivate: [authGuard, bulkImportGuard],
     title: 'Carga Masiva de Atletas y Tutores — Talentus Scout'
   },
   {
