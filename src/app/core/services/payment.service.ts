@@ -18,7 +18,12 @@ import {
   UpdatePaymentGatewaySettingsRequest,
   SubscriptionPlanAdminDto,
   CreateSubscriptionPlanRequest,
-  UpdateSubscriptionPlanRequest
+  UpdateSubscriptionPlanRequest,
+  VexPayQuoteResponse,
+  CreateVexPaySessionRequest,
+  CreateVexPaySessionResponse,
+  VexPaySessionVerifyResponse,
+  VexPayReconciliationResponse
 } from '../models/payment.model';
 
 @Injectable({
@@ -172,6 +177,37 @@ export class PaymentService {
 
   toggleSubscriptionPlanStatus(id: string): Observable<SubscriptionPlanAdminDto> {
     return this.http.patch<SubscriptionPlanAdminDto>(`/api/v1/admin/subscription-plans/${id}/toggle-status`, {});
+  }
+
+  // --- Integración Pasarela Automatizada VexPay (TS-78) ---
+
+  getVexPayQuote(options: { usdAmount?: number; planId?: string; discountCode?: string; athleteId?: string }): Observable<VexPayQuoteResponse> {
+    let params = new HttpParams();
+    if (options.usdAmount !== undefined) {
+      params = params.set('usdAmount', options.usdAmount.toString());
+    }
+    if (options.planId) {
+      params = params.set('planId', options.planId);
+    }
+    if (options.discountCode) {
+      params = params.set('discountCode', options.discountCode);
+    }
+    if (options.athleteId) {
+      params = params.set('athleteId', options.athleteId);
+    }
+    return this.http.get<VexPayQuoteResponse>('/api/v1/payments/vexpay/quote', { params });
+  }
+
+  createVexPaySession(request: CreateVexPaySessionRequest): Observable<CreateVexPaySessionResponse> {
+    return this.http.post<CreateVexPaySessionResponse>('/api/v1/payments/vexpay/checkout-session', request);
+  }
+
+  verifyVexPaySession(sessionId: string): Observable<VexPaySessionVerifyResponse> {
+    return this.http.post<VexPaySessionVerifyResponse>(`/api/v1/payments/vexpay/sessions/${encodeURIComponent(sessionId)}/verify`, {});
+  }
+
+  reconcileVexPayPayments(): Observable<VexPayReconciliationResponse> {
+    return this.http.post<VexPayReconciliationResponse>('/api/v1/admin/payments/vexpay/reconcile', {});
   }
 }
 

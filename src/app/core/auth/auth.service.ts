@@ -48,9 +48,18 @@ export class AuthService {
   readonly canAccessBulkImport = computed(() => this.isVerifiedScout() && this.currentUser()?.bulkImportEnabled === true);
 
   constructor() {
-    if (this.token()) {
-      this.fetchCurrentUser().subscribe({
-        error: () => this.logout()
+    if (typeof window !== 'undefined' && this.token()) {
+      // Diferir la validación de sesión fuera del constructor para evitar dependencia circular NG0200 con jwtInterceptor
+      queueMicrotask(() => {
+        if (this.token() && !this.currentUser()) {
+          this.fetchCurrentUser().subscribe({
+            error: (err) => {
+              if (err?.status === 401 || err?.status === 403) {
+                this.logout();
+              }
+            }
+          });
+        }
       });
     }
   }

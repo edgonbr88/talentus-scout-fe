@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { TutorDashboardComponent } from './tutor-dashboard.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { AthleteService } from '../../core/services/athlete.service';
 import { VideoUploadService } from '../../core/services/video-upload.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { AthleteSummary } from '../../core/models/athlete.model';
 import { signal } from '@angular/core';
 
@@ -13,6 +14,7 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
   let fixture: ComponentFixture<TutorDashboardComponent>;
   let athleteServiceSpy: jasmine.SpyObj<AthleteService>;
   let videoUploadServiceSpy: jasmine.SpyObj<VideoUploadService>;
+  let paymentServiceSpy: jasmine.SpyObj<PaymentService>;
   let authServiceMock: Partial<AuthService>;
 
   const mockAthlete1: AthleteSummary = {
@@ -61,6 +63,9 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
     videoUploadServiceSpy = jasmine.createSpyObj('VideoUploadService', [
       'getVideosByAthlete'
     ]);
+    paymentServiceSpy = jasmine.createSpyObj('PaymentService', [
+      'verifyVexPaySession'
+    ]);
 
     athleteServiceSpy.getMyAthletes.and.returnValue(of([]));
     athleteServiceSpy.getTutorRadarMetrics.and.returnValue(of(null as any));
@@ -75,6 +80,7 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
         status: 'ACTIVE'
       } as any),
       token: signal('fake-jwt-token'),
+      isAthlete: signal(false),
       logout: jasmine.createSpy('logout')
     };
 
@@ -84,6 +90,7 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
         provideRouter([]),
         { provide: AthleteService, useValue: athleteServiceSpy },
         { provide: VideoUploadService, useValue: videoUploadServiceSpy },
+        { provide: PaymentService, useValue: paymentServiceSpy },
         { provide: AuthService, useValue: authServiceMock }
       ]
     }).compileComponents();
@@ -752,6 +759,62 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
       expect(athleteServiceSpy.deleteAthletePhoto).toHaveBeenCalledWith(athleteWithPhoto.id);
       expect(component.showPhotoModal).toBeFalse();
       expect(athleteServiceSpy.getMyAthletes).toHaveBeenCalled();
+    });
+  });
+
+  describe('TS-78 VexPay Checkout Return Handling', () => {
+    it('should verify VexPay session on return and show ACTIVATED banner when paid', () => {
+      paymentServiceSpy.verifyVexPaySession.and.returnValue(of({
+        transactionId: 'tx-vp-1',
+        sessionId: 'cs_vp_1',
+        sessionStatus: 'paid',
+        transactionStatus: 'APPROVED',
+        athleteId: 'ath-001',
+        athleteName: 'Carlos Gomez',
+        planName: 'Plan Pro Mensual',
+        activated: true,
+        message: '¡Pago confirmado con éxito!'
+      }));
+
+      fixture = TestBed.createComponent(TutorDashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.verifyVexPayPayment('cs_vp_1');
+      fixture.detectChanges();
+
+      expect(paymentServiceSpy.verifyVexPaySession).toHaveBeenCalledWith('cs_vp_1');
+      expect(component.vexPayReturnStatus).toBe('ACTIVATED');
+      const banner = fixture.nativeElement.querySelector('.vexpay-return-banner');
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('Pago VexPay Confirmado');
+    });
+
+    it('should show PENDING banner with retry button when VexPay session is still pending', () => {
+      paymentServiceSpy.verifyVexPaySession.and.returnValue(of({
+        transactionId: 'tx-vp-2',
+        sessionId: 'cs_vp_2',
+        sessionStatus: 'open',
+        transactionStatus: 'PENDING_GATEWAY',
+        athleteId: 'ath-001',
+        athleteName: 'Carlos Gomez',
+        planName: 'Plan Pro Mensual',
+        activated: false,
+        message: 'Tu pago está en verificación bancaria.'
+      }));
+
+      fixture = TestBed.createComponent(TutorDashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      component.verifyVexPayPayment('cs_vp_2');
+      fixture.detectChanges();
+
+      expect(component.vexPayReturnStatus).toBe('PENDING');
+      const banner = fixture.nativeElement.querySelector('.vexpay-return-banner');
+      expect(banner).toBeTruthy();
+      expect(banner.textContent).toContain('En verificación bancaria');
+      expect(banner.textContent).toContain('Verificar nuevamente');
     });
   });
 });

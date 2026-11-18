@@ -23,6 +23,9 @@
         <span class="metric-indicator indicator-zelle" *ngIf="(summary()?.zelleApprovedCount || 0) > 0">
           🟣 {{ summary()?.zelleApprovedCount }} Zelle
         </span>
+        <span class="metric-indicator indicator-vexpay" *ngIf="(summary()?.vexpayApprovedCount || 0) > 0">
+          ⚡ {{ summary()?.vexpayApprovedCount }} VexPay
+        </span>
       </div>
       <p class="metric-desc">Ingresos consolidados por planes Pro (Mensual y Anual).</p>
     </div>
@@ -57,6 +60,9 @@
         </span>
         <span class="metric-sub" *ngIf="(summary()?.rejectedCount || 0) > 0">
           · {{ summary()?.rejectedCount }} Rechazadas
+        </span>
+        <span class="metric-sub" *ngIf="(summary()?.reversedCount || 0) > 0">
+          · {{ summary()?.reversedCount }} Reversadas
         </span>
       </div>
       <p class="metric-desc">Histórico completo de órdenes procesadas en la plataforma.</p>
@@ -231,6 +237,7 @@
           (change)="onFilterChange()"
         >
           <option value="ALL">Todos los Métodos</option>
+          <option value="VEXPAY">VexPay (Automatizado)</option>
           <option value="PAGO_MOVIL">Pago Móvil (Bs)</option>
           <option value="BINANCE_PAY">Binance Pay (USDT)</option>
           <option value="ZELLE">Zelle (USD)</option>
@@ -248,13 +255,26 @@
           <option value="ALL">Todos los Estados</option>
           <option value="APPROVED">Aprobados</option>
           <option value="PENDING_AUDIT">Pendientes de Conciliación</option>
+          <option value="PENDING_GATEWAY">En Pasarela (VexPay)</option>
           <option value="REJECTED">Rechazados</option>
+          <option value="REVERSED">Reversados</option>
         </select>
       </div>
 
-      <button (click)="loadHistory(currentPage())" class="btn btn-secondary btn-sm" type="button">
-        Refrescar Historial
-      </button>
+      <div class="history-actions-right">
+        <button
+          (click)="reconcileVexPay()"
+          [disabled]="isReconcilingVexPay()"
+          class="btn btn-primary btn-sm"
+          type="button"
+        >
+          <span *ngIf="isReconcilingVexPay()" class="spinner-small mr-1"></span>
+          ↻ Conciliar VexPay
+        </button>
+        <button (click)="loadHistory(currentPage())" class="btn btn-secondary btn-sm" type="button">
+          Refrescar Historial
+        </button>
+      </div>
     </div>
 
     <!-- ESTADO DE CARGA HISTORIAL -->
@@ -286,9 +306,11 @@
                 class="chip-method"
                 [class.chip-binance]="item.method === 'BINANCE_PAY'"
                 [class.chip-zelle]="item.method === 'ZELLE'"
+                [class.chip-vexpay]="item.method === 'VEXPAY'"
               >
-                {{ item.method === 'BINANCE_PAY' ? '🟡 Binance Pay' : (item.method === 'ZELLE' ? '🟣 Zelle (USD)' : '🇻🇪 Pago Móvil') }}
+                {{ item.method === 'VEXPAY' ? '⚡ VexPay' : (item.method === 'BINANCE_PAY' ? '🟡 Binance Pay' : (item.method === 'ZELLE' ? '🟣 Zelle (USD)' : '🇻🇪 Pago Móvil')) }}
               </span>
+              <span *ngIf="item.vexpaySubMethod" class="submethod-tag">{{ item.vexpaySubMethod }}</span>
             </td>
             <td class="cell-code">
               <code>{{ item.referenceNumber || item.gatewayOrderId || 'N/A' }}</code>
@@ -308,9 +330,16 @@
                 class="badge-status"
                 [class.status-approved]="item.status === 'APPROVED'"
                 [class.status-pending]="item.status === 'PENDING_AUDIT'"
+                [class.status-gateway]="item.status === 'PENDING_GATEWAY'"
+                [class.status-reversed]="item.status === 'REVERSED'"
                 [class.status-rejected]="item.status === 'REJECTED'"
               >
-                {{ item.status === 'APPROVED' ? '✓ Aprobado' : (item.status === 'PENDING_AUDIT' ? '⏳ Pendiente' : '✕ Rechazado') }}
+                {{
+                  item.status === 'APPROVED' ? '✓ Aprobado' :
+                  (item.status === 'PENDING_AUDIT' ? '⏳ Pendiente' :
+                  (item.status === 'PENDING_GATEWAY' ? '⚡ En Pasarela' :
+                  (item.status === 'REVERSED' ? '↩ Reversado' : '✕ Rechazado')))
+                }}
               </span>
             </td>
             <td class="cell-tutor">
@@ -855,6 +884,49 @@
           <span class="status-indicator-dot" [class.dot-online]="zelleEnabledInput"></span>
           <span class="footer-note">
             {{ zelleEnabledInput ? 'Visible en la pestaña Zelle (USD) del modal de checkout de los tutores.' : 'Pestaña Zelle en modo mantenimiento dentro del modal de checkout.' }}
+          </span>
+        </div>
+      </article>
+
+      <!-- BLOQUE 4: VEXPAY (PASARELA AUTOMATIZADA) - TS-78 -->
+      <article class="bento-config-card vexpay-card">
+        <div class="config-card-header">
+          <div class="card-title-group">
+            <span class="badge badge-vexpay">⚡ PASARELA AUTOMATIZADA</span>
+            <h3 class="config-title">VexPay Checkout Alojado</h3>
+          </div>
+          <div class="switch-toggle-wrap">
+            <label class="switch-toggle" [attr.aria-label]="vexpayEnabledInput ? 'Desactivar VexPay' : 'Activar VexPay'">
+              <input type="checkbox" [(ngModel)]="vexpayEnabledInput" />
+              <span class="slider"></span>
+            </label>
+            <span class="toggle-status-text" [class.status-active]="vexpayEnabledInput">
+              {{ vexpayEnabledInput ? 'Activo en Checkout' : 'Pausado' }}
+            </span>
+          </div>
+        </div>
+
+        <p class="config-desc">
+          Cobros automatizados vía Pago Móvil automático, Débito Inmediato (C2P), USDT/USDC y Pesos Colombianos con activación inmediata mediante webhooks firmados.
+        </p>
+
+        <div class="vexpay-status-grid">
+          <div class="vexpay-status-pill">
+            <span class="vexpay-pill-lbl">Credencial en Servidor</span>
+            <strong [class.text-ok]="gatewaySettings()?.vexpayConfigured" [class.text-warn]="!gatewaySettings()?.vexpayConfigured">
+              {{ gatewaySettings()?.vexpayConfigured ? '✓ API Key Configurada' : '⚠ Pendiente (VEXPAY_API_KEY)' }}
+            </strong>
+          </div>
+          <div class="vexpay-status-pill">
+            <span class="vexpay-pill-lbl">Entorno Activo</span>
+            <strong>{{ gatewaySettings()?.vexpayLivemode ? '🟢 Producción (Live)' : '🧪 Sandbox (Test)' }}</strong>
+          </div>
+        </div>
+
+        <div class="config-card-footer">
+          <span class="status-indicator-dot" [class.dot-online]="vexpayEnabledInput"></span>
+          <span class="footer-note">
+            {{ vexpayEnabledInput ? 'Las llaves privadas se administran exclusivamente en variables de entorno del backend.' : 'Opción VexPay deshabilitada temporalmente en el checkout de tutores y atletas.' }}
           </span>
         </div>
       </article>

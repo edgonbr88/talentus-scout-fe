@@ -26,6 +26,8 @@ export interface PaymentConfigResponse {
   zelleEmail?: string;
   zelleAccountHolder?: string;
   zelleQrImageUrl?: string;
+  vexpayEnabled?: boolean;
+  vexpayConfigured?: boolean;
 }
 
 export interface BcvRateResponse {
@@ -95,10 +97,13 @@ export interface PaymentTransactionResponse {
   bcvExchangeRate: number;
   referenceNumber: string;
   gatewayOrderId?: string;
+  vexpaySessionId?: string;
+  vexpayPaymentId?: string;
+  vexpaySubMethod?: string;
   paymentDate: string;
   originBank?: string;
   originPhone?: string;
-  status: 'PENDING_AUDIT' | 'APPROVED' | 'REJECTED';
+  status: 'PENDING_AUDIT' | 'PENDING_GATEWAY' | 'APPROVED' | 'REJECTED' | 'REVERSED' | 'AUTO_CONFIRMED';
   rejectionReason?: string;
   createdAt: string;
   auditedAt?: string;
@@ -134,6 +139,8 @@ export interface AdminPaymentSummary {
   binancePayApprovedCount: number;
   pagoMovilApprovedCount: number;
   zelleApprovedCount?: number;
+  vexpayApprovedCount?: number;
+  reversedCount?: number;
 }
 
 export interface PaymentHistoryPage {
@@ -242,6 +249,9 @@ export interface PaymentGatewaySettingsDto {
   zelleEmail?: string;
   zelleAccountHolder?: string;
   zelleQrImageUrl?: string;
+  vexpayEnabled?: boolean;
+  vexpayConfigured?: boolean;
+  vexpayLivemode?: boolean;
   updatedAt?: string;
 }
 
@@ -258,6 +268,7 @@ export interface UpdatePaymentGatewaySettingsRequest {
   zelleEnabled?: boolean;
   zelleEmail?: string;
   zelleAccountHolder?: string;
+  vexpayEnabled?: boolean;
 }
 
 export interface SubscriptionPlanAdminDto {
@@ -293,4 +304,57 @@ export interface UpdateSubscriptionPlanRequest {
   hasRadarViews: boolean;
   hasPdfCv: boolean;
   isActive: boolean;
+}
+
+export interface VexPayQuoteResponse {
+  usdAmount: number;
+  originalAmountUsd?: number;
+  discountAmountUsd?: number;
+  discountCode?: string;
+  rate: number;
+  rateSource: 'BCV' | 'MARKET';
+  bcvRate: number;
+  vesAmount: number;
+  medianRate?: number;
+  medianVesAmount?: number;
+  fetchedAt?: string;
+}
+
+export interface CreateVexPaySessionRequest {
+  athleteId: string;
+  planId: string;
+  discountCode?: string;
+}
+
+export interface CreateVexPaySessionResponse {
+  checkoutUrl: string;
+  sessionId: string;
+  transactionId: string;
+  amountUsd: number;
+  expiresAt?: string;
+  livemode: boolean;
+  status: string;
+}
+
+export interface VexPaySessionVerifyResponse {
+  transactionId: string;
+  sessionId: string;
+  sessionStatus: string;
+  transactionStatus: 'PENDING_AUDIT' | 'PENDING_GATEWAY' | 'APPROVED' | 'REJECTED' | 'REVERSED' | 'AUTO_CONFIRMED';
+  paymentId?: string;
+  subMethod?: string;
+  athleteId: string;
+  athleteName: string;
+  planName: string;
+  activated: boolean;
+  message: string;
+}
+
+export interface VexPayReconciliationResponse {
+  checkedCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  stillPendingCount: number;
+  errorCount: number;
+  executedAt: string;
 }

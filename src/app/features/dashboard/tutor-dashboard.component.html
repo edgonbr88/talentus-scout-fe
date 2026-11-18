@@ -38,6 +38,35 @@
     <button class="toast-close" (click)="lastUploadedNotice = null">✕</button>
   </div>
 
+  <!-- BANNER DE VERIFICACIÓN / RETORNO VEXPAY (TS-78) -->
+  <div
+    *ngIf="vexPayReturnStatus"
+    class="vexpay-return-banner"
+    [class.vexpay-activated]="vexPayReturnStatus === 'ACTIVATED'"
+    [class.vexpay-pending]="vexPayReturnStatus === 'PENDING'"
+    [class.vexpay-cancelled]="vexPayReturnStatus === 'CANCELLED'"
+    [class.vexpay-error]="vexPayReturnStatus === 'ERROR'"
+    role="status"
+  >
+    <div class="vexpay-return-content">
+      <strong>
+        {{ vexPayReturnStatus === 'ACTIVATED' ? '✓ Pago VexPay Confirmado' : (vexPayReturnStatus === 'PENDING' ? '⏳ En verificación bancaria (VexPay)' : (vexPayReturnStatus === 'VERIFYING' ? '⚡ Verificando pago con VexPay...' : (vexPayReturnStatus === 'CANCELLED' ? '✕ Pago Cancelado en VexPay' : '⚠ Error de Verificación VexPay'))) }}
+      </strong>
+      <span>{{ vexPayReturnMessage }}</span>
+    </div>
+    <div class="vexpay-return-actions">
+      <button
+        *ngIf="(vexPayReturnStatus === 'PENDING' || vexPayReturnStatus === 'ERROR') && vexPayReturnSessionId"
+        type="button"
+        class="btn btn-secondary btn-sm"
+        (click)="verifyVexPayPayment(vexPayReturnSessionId!)"
+      >
+        ↻ Verificar nuevamente
+      </button>
+      <button type="button" class="toast-close" (click)="dismissVexPayNotice()" aria-label="Cerrar aviso VexPay">✕</button>
+    </div>
+  </div>
+
   <!-- BENTO GRID DEL DASHBOARD -->
   <div class="bento-grid dashboard-grid">
     <!-- Tarjeta Principal: Atletas Representados (Span 8) -->

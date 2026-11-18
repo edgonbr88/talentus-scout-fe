@@ -96,7 +96,9 @@ describe('CheckoutPagoMovilModalComponent - TS-44 Validación y Envío de amount
       'validateCoupon',
       'redeemFreePromo',
       'createBinanceOrder',
-      'getAthleteSubscriptionStatus'
+      'getAthleteSubscriptionStatus',
+      'getVexPayQuote',
+      'createVexPaySession'
     ]);
 
     paymentServiceSpy.getPaymentConfig.and.returnValue(of(mockConfig));
@@ -308,5 +310,60 @@ describe('CheckoutPagoMovilModalComponent - TS-44 Validación y Envío de amount
 
     expect(paymentServiceSpy.reportZellePayment).not.toHaveBeenCalled();
     expect(component.errorMessage()).toContain('titular');
+  });
+
+  it('debe consultar la cotización oficial de VexPay al seleccionar la pestaña VEXPAY (TS-78)', () => {
+    paymentServiceSpy.getVexPayQuote.and.returnValue(of({
+      usdAmount: 5.00,
+      rate: 915.7476,
+      rateSource: 'BCV',
+      bcvRate: 915.7476,
+      vesAmount: 4578.74
+    }));
+
+    component.setMethod('VEXPAY');
+    fixture.detectChanges();
+
+    expect(component.selectedMethod()).toBe('VEXPAY');
+    expect(paymentServiceSpy.getVexPayQuote).toHaveBeenCalledWith({
+      planId: 'PRO_MONTHLY',
+      discountCode: undefined,
+      athleteId: 'ath-123-uuid'
+    });
+    expect(component.vexPayQuote()?.vesAmount).toBe(4578.74);
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('4,578.74 Bs.');
+    expect(compiled.textContent).toContain('Ir a Pagar con VexPay');
+  });
+
+  it('debe crear sesión de VexPay, respaldar en sessionStorage y redirigir a checkoutUrl (TS-78)', () => {
+    paymentServiceSpy.getVexPayQuote.and.returnValue(of({
+      usdAmount: 5.00,
+      rate: 915.7476,
+      rateSource: 'BCV',
+      bcvRate: 915.7476,
+      vesAmount: 4578.74
+    }));
+    paymentServiceSpy.createVexPaySession.and.returnValue(of({
+      checkoutUrl: 'https://pay.vexpay.app/pay/cs-test-999',
+      sessionId: 'cs_test_999',
+      transactionId: 'tx-vexpay-1',
+      amountUsd: 5.00,
+      livemode: false,
+      status: 'open'
+    }));
+
+    spyOn(component, 'redirectToCheckout').and.stub();
+
+    component.setMethod('VEXPAY');
+    component.startVexPayCheckout();
+
+    expect(paymentServiceSpy.createVexPaySession).toHaveBeenCalledWith({
+      athleteId: 'ath-123-uuid',
+      planId: 'PRO_MONTHLY',
+      discountCode: undefined
+    });
+    expect(component.redirectToCheckout).toHaveBeenCalledWith('https://pay.vexpay.app/pay/cs-test-999');
   });
 });

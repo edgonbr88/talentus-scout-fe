@@ -25,9 +25,18 @@ export function app(): express.Express {
     index: 'index.html',
   }));
 
+  // Rutas protegidas que dependen de autenticación en navegador (localStorage) usan shell CSR puro
+  const csrOnlyPrefixes = ['/dashboard', '/admin', '/scout', '/auth/complete-profile'];
+  const csrIndexHtml = join(browserDistFolder, 'index.csr.html');
+
   // All regular routes use the Angular engine
   server.get('**', (req, res, next) => {
-    const { protocol, originalUrl, baseUrl, headers } = req;
+    const { protocol, originalUrl, baseUrl, headers, path } = req;
+
+    if (csrOnlyPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+      res.sendFile(csrIndexHtml);
+      return;
+    }
 
     commonEngine
       .render({
