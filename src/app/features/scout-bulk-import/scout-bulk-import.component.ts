@@ -22,6 +22,8 @@ export class ScoutBulkImportComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
   activeJob: BulkImportJobResponse | null = null;
   recentJobs: BulkImportJobResponse[] = [];
+  showOmittedDetails: boolean = false;
+  isDownloadingReport: boolean = false;
 
   private pollSub: Subscription | null = null;
 
@@ -183,9 +185,15 @@ export class ScoutBulkImportComponent implements OnInit, OnDestroy {
     });
   }
 
+  toggleOmittedDetails(): void {
+    this.showOmittedDetails = !this.showOmittedDetails;
+  }
+
   downloadErrorReport(jobId: string): void {
+    this.isDownloadingReport = true;
     this.bulkImportService.downloadErrorReport(jobId).subscribe({
       next: (blob) => {
+        this.isDownloadingReport = false;
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -194,6 +202,7 @@ export class ScoutBulkImportComponent implements OnInit, OnDestroy {
         window.URL.revokeObjectURL(url);
       },
       error: () => {
+        this.isDownloadingReport = false;
         this.errorMessage = 'No se pudo descargar el informe de advertencias.';
       }
     });
