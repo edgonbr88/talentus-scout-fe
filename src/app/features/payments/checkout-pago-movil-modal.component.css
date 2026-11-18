@@ -454,12 +454,12 @@
 /* Selector de pestañas / pasarela */
 .method-selector-tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.65rem;
   margin-bottom: 1.5rem;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 520px) {
   .method-selector-tabs {
     grid-template-columns: 1fr;
   }
@@ -1213,5 +1213,217 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* =========================================================
+   FLUJO VEXPAY AUTOMATIZADO (TS-78)
+   ========================================================= */
+.tab-btn.tab-vexpay.tab-active {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  color: #f8fafc;
+}
+
+.tab-vexpay-badge {
+  font-size: 1.35rem;
+}
+
+.tab-auto-pill {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
+.vexpay-flow-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  margin-top: 0.75rem;
+}
+
+.vexpay-benefit-banner {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.vexpay-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+}
+
+.vexpay-spark-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0284c7;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 0.22rem 0.5rem;
+  border-radius: 0.35rem;
+}
+
+.vexpay-logo-title h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  margin: 0;
+}
+
+.vexpay-benefit-banner p {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.vexpay-quote-card {
+  background: #0b1120;
+  border: 1px solid #1e293b;
+  border-radius: 0.85rem;
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.vexpay-quote-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quote-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-refresh-quote {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #7dd3fc;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-refresh-quote:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.2);
+  color: #ffffff;
+}
+
+.vexpay-quote-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #94a3b8;
+  font-size: 0.84rem;
+  padding: 0.5rem 0;
+}
+
+.vexpay-quote-error {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.vexpay-quote-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .vexpay-quote-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quote-metric {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.6rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.quote-metric-highlight {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.quote-lbl {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.quote-usd, .quote-rate {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.quote-ves {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #34d399;
+}
+
+.vexpay-security-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  line-height: 1.45;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vexpay-security-note svg {
+  flex-shrink: 0;
+  color: #38bdf8;
+  margin-top: 2px;
+}
+
+.btn-submit-vexpay {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35) !important;
+}
+
+.btn-submit-vexpay:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
 
 

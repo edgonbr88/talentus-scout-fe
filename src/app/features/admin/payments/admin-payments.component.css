@@ -1749,4 +1749,98 @@
   color: #94A3B8;
 }
 
+/* ==========================================================================
+   ESTILOS DE INTEGRACIÓN VEXPAY (TS-78)
+   ========================================================================== */
+.indicator-vexpay, .badge-vexpay, .chip-method.chip-vexpay {
+  background: rgba(14, 165, 233, 0.16) !important;
+  color: #7DD3FC !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+.badge-vexpay {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: var(--radius-full, 999px);
+}
+
+.submethod-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.15);
+  color: #CBD5E1;
+}
+
+.badge-status.status-gateway {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38BDF8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.badge-status.status-reversed {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.history-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.vexpay-card {
+  grid-column: span 2;
+  border-color: rgba(56, 189, 248, 0.25);
+  background: linear-gradient(135deg, rgba(14, 21, 39, 0.95) 0%, rgba(2, 132, 199, 0.08) 100%);
+}
+
+@media (max-width: 900px) {
+  .vexpay-card {
+    grid-column: span 1;
+  }
+}
+
+.vexpay-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 640px) {
+  .vexpay-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.vexpay-status-pill {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.vexpay-pill-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94A3B8;
+}
+
+.text-ok { color: #34D399; }
+.text-warn { color: #FBBF24; }
+
+
 

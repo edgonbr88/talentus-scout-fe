@@ -117,6 +117,10 @@ export class AdminPaymentsComponent implements OnInit {
   readonly zelleQrPreviewUrl = signal<string | null>(null);
   selectedZelleQrFile: File | null = null;
 
+  // VexPay Automatizado (TS-78)
+  vexpayEnabledInput = true;
+  readonly isReconcilingVexPay = signal<boolean>(false);
+
   // Gestión de Planes y Precios (TS-63)
   readonly subscriptionPlans = signal<SubscriptionPlanAdminDto[]>([]);
   readonly isLoadingPlans = signal<boolean>(false);
@@ -480,6 +484,7 @@ export class AdminPaymentsComponent implements OnInit {
         this.zelleEmailInput = settings.zelleEmail || 'pagos@talentusscout.com';
         this.zelleAccountHolderInput = settings.zelleAccountHolder || 'Talentus Scout LLC';
         this.zelleQrImageUrlDisplay.set(settings.zelleQrImageUrl || null);
+        this.vexpayEnabledInput = settings.vexpayEnabled !== false;
 
         this.isLoadingGateway.set(false);
       },
@@ -518,7 +523,8 @@ export class AdminPaymentsComponent implements OnInit {
       binanceNetwork: this.binanceNetworkInput.trim() || undefined,
       zelleEnabled: this.zelleEnabledInput,
       zelleEmail: this.zelleEmailInput.trim() || undefined,
-      zelleAccountHolder: this.zelleAccountHolderInput.trim() || undefined
+      zelleAccountHolder: this.zelleAccountHolderInput.trim() || undefined,
+      vexpayEnabled: this.vexpayEnabledInput
     };
 
     this.paymentService.updatePaymentGatewaySettings(request).subscribe({
@@ -595,8 +601,32 @@ export class AdminPaymentsComponent implements OnInit {
     if (s.pagoMovilEnabled) count++;
     if (s.binanceManualEnabled) count++;
     if (s.zelleEnabled !== false) count++;
+    if (s.vexpayEnabled === true) count++;
     if (count === 0) return 'Pausadas';
     return count === 1 ? '1 Activa' : `${count} Activas`;
+  }
+
+  reconcileVexPay(): void {
+    if (this.isReconcilingVexPay()) return;
+    this.isReconcilingVexPay.set(true);
+
+    this.paymentService.reconcileVexPayPayments().subscribe({
+      next: (res) => {
+        this.isReconcilingVexPay.set(false);
+        this.showFeedback(
+          'success',
+          `Conciliación VexPay completada: ${res.checkedCount} revisadas · ${res.approvedCount} aprobadas · ${res.rejectedCount} expiradas/rechazadas.`
+        );
+        this.loadSummary();
+        if (this.activeTab() === 'HISTORY') {
+          this.loadHistory(this.currentPage());
+        }
+      },
+      error: (err) => {
+        this.isReconcilingVexPay.set(false);
+        this.showFeedback('error', 'Error al conciliar transacciones VexPay: ' + (err.error?.detail || err.error?.message || err.message));
+      }
+    });
   }
 
   onZelleQrFileSelected(event: Event): void {

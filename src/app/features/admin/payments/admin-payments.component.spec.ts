@@ -68,7 +68,8 @@ describe('AdminPaymentsComponent - Auditoría y Configuración de Pagos', () => 
       'getAdminSubscriptionPlanById',
       'createSubscriptionPlan',
       'updateSubscriptionPlan',
-      'toggleSubscriptionPlanStatus'
+      'toggleSubscriptionPlanStatus',
+      'reconcileVexPayPayments'
     ]);
 
     paymentServiceSpy.getAdminPaymentSummary.and.returnValue(of({
@@ -221,5 +222,53 @@ describe('AdminPaymentsComponent - Auditoría y Configuración de Pagos', () => 
       zelleAccountHolder: 'Talentus Corp USA'
     }));
     expect(component.feedback()?.type).toBe('success');
+  });
+
+  it('should render VexPay configuration card and toggle vexpayEnabled (TS-78)', () => {
+    component.setTab('GATEWAY_SETTINGS');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('VexPay Checkout Alojado');
+
+    paymentServiceSpy.updatePaymentGatewaySettings.and.returnValue(of({
+      ...mockGatewaySettings,
+      vexpayEnabled: false
+    }));
+
+    component.vexpayEnabledInput = false;
+    component.saveGatewaySettings();
+
+    expect(paymentServiceSpy.updatePaymentGatewaySettings).toHaveBeenCalledWith(jasmine.objectContaining({
+      vexpayEnabled: false
+    }));
+    expect(component.feedback()?.type).toBe('success');
+  });
+
+  it('should reconcile VexPay pending transactions from HISTORY tab (TS-78)', () => {
+    paymentServiceSpy.getAdminPaymentHistory.and.returnValue(of({
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: 15,
+      number: 0
+    }));
+    paymentServiceSpy.reconcileVexPayPayments.and.returnValue(of({
+      checkedCount: 3,
+      approvedCount: 2,
+      rejectedCount: 1,
+      stillPendingCount: 0,
+      errorCount: 0,
+      executedAt: new Date().toISOString()
+    }));
+
+    component.setTab('HISTORY');
+    fixture.detectChanges();
+
+    component.reconcileVexPay();
+
+    expect(paymentServiceSpy.reconcileVexPayPayments).toHaveBeenCalled();
+    expect(component.feedback()?.type).toBe('success');
+    expect(component.feedback()?.text).toContain('3 revisadas · 2 aprobadas');
   });
 });

@@ -9,7 +9,8 @@ import {
   PaymentConfigResponse,
   PaymentTransactionResponse,
   SubscriptionPlanDto,
-  ValidateCouponResponse
+  ValidateCouponResponse,
+  VexPayQuoteResponse
 } from '../../core/models/payment.model';
 
 @Component({
@@ -27,7 +28,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   @Output() paymentReported = new EventEmitter<PaymentTransactionResponse>();
 
   // Método de pago seleccionado
-  readonly selectedMethod = signal<'PAGO_MOVIL' | 'BINANCE_PAY' | 'ZELLE'>('PAGO_MOVIL');
+  readonly selectedMethod = signal<'PAGO_MOVIL' | 'BINANCE_PAY' | 'ZELLE' | 'VEXPAY'>('PAGO_MOVIL');
 
   // Estados de datos
   readonly config = signal<PaymentConfigResponse | null>(null);
@@ -64,12 +65,18 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   binanceOriginAccount = '';
   readonly isSubmittingBinance = signal<boolean>(false);
 
-  // Formulario Zelle Manual (TS-66)
+  // Estados de Zelle Manual (TS-66)
   zelleReference = '';
   zellePaymentDate = new Date().toISOString().substring(0, 10);
   zelleOriginAccountHolder = '';
   zelleOriginEmailOrPhone = '';
   readonly isSubmittingZelle = signal<boolean>(false);
+
+  // Estados de VexPay Automatizado (TS-78)
+  readonly vexPayQuote = signal<VexPayQuoteResponse | null>(null);
+  readonly isLoadingVexPayQuote = signal<boolean>(false);
+  readonly vexPayQuoteError = signal<string | null>(null);
+  readonly isCreatingVexPaySession = signal<boolean>(false);
 
   readonly popularBanks = [
     'Banco de Venezuela',
@@ -99,6 +106,9 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
         }
         if (cfg.pagoMovilEnabled !== false) {
           this.selectedMethod.set('PAGO_MOVIL');
+        } else if (cfg.vexpayEnabled !== false) {
+          this.selectedMethod.set('VEXPAY');
+          this.loadVexPayQuote();
         } else if (cfg.binanceManualEnabled !== false) {
           this.selectedMethod.set('BINANCE_PAY');
         } else if (cfg.zelleEnabled !== false) {
@@ -125,7 +135,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     });
   }
 
-  setMethod(method: 'PAGO_MOVIL' | 'BINANCE_PAY' | 'ZELLE'): void {
+  setMethod(method: 'PAGO_MOVIL' | 'BINANCE_PAY' | 'ZELLE' | 'VEXPAY'): void {
     if (method === 'PAGO_MOVIL' && this.config()?.pagoMovilEnabled === false) {
       return;
     }
@@ -135,9 +145,15 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     if (method === 'ZELLE' && this.config()?.zelleEnabled === false) {
       return;
     }
+    if (method === 'VEXPAY' && this.config()?.vexpayEnabled === false) {
+      return;
+    }
     this.selectedMethod.set(method);
     this.errorMessage.set(null);
     this.binanceNotice.set(null);
+    if (method === 'VEXPAY') {
+      this.loadVexPayQuote();
+    }
   }
 
   selectPlan(plan: SubscriptionPlanDto): void {
@@ -149,6 +165,8 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     // Revalidar cupón si ya había uno ingresado
     if (this.appliedCoupon()) {
       this.applyCoupon();
+    } else if (this.selectedMethod() === 'VEXPAY') {
+      this.loadVexPayQuote();
     }
   }
 
@@ -209,9 +227,15 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
           if (this.binanceOrder()) {
             this.binanceOrder.set(null);
           }
+          if (this.selectedMethod() === 'VEXPAY' && !res.isFreePromo) {
+            this.loadVexPayQuote();
+          }
         } else {
           this.appliedCoupon.set(null);
           this.couponError.set(res.message);
+          if (this.selectedMethod() === 'VEXPAY') {
+            this.loadVexPayQuote();
+          }
         }
       },
       error: (err) => {
@@ -229,6 +253,9 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.couponSuccess.set(null);
     if (this.binanceOrder()) {
       this.binanceOrder.set(null);
+    }
+    if (this.selectedMethod() === 'VEXPAY') {
+      this.loadVexPayQuote();
     }
   }
 
@@ -455,8 +482,76 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     });
   }
 
+  // --- Flujo Pasarela Automatizada VexPay (TS-78) ---
+  loadVexPayQuote(): void {
+    const plan = this.selectedPlan();
+    if (!plan) return;
+
+    this.isLoadingVexPayQuote.set(true);
+    this.vexPayQuoteError.set(null);
+
+    this.paymentService.getVexPayQuote({
+      planId: plan.id,
+      discountCode: this.appliedCoupon()?.code,
+      athleteId: this.athlete.id
+    }).subscribe({
+      next: (quote) => {
+        this.vexPayQuote.set(quote);
+        this.isLoadingVexPayQuote.set(false);
+      },
+      error: (err) => {
+        this.isLoadingVexPayQuote.set(false);
+        this.vexPayQuote.set(null);
+        this.vexPayQuoteError.set(err.error?.detail || err.error?.message || 'No se pudo obtener la cotización en tiempo real de VexPay.');
+      }
+    });
+  }
+
+  startVexPayCheckout(): void {
+    const plan = this.selectedPlan();
+    if (!plan) {
+      this.errorMessage.set('Por favor selecciona un plan antes de continuar.');
+      return;
+    }
+
+    this.isCreatingVexPaySession.set(true);
+    this.errorMessage.set(null);
+
+    this.paymentService.createVexPaySession({
+      athleteId: this.athlete.id,
+      planId: plan.id,
+      discountCode: this.appliedCoupon()?.code
+    }).subscribe({
+      next: (res) => {
+        this.isCreatingVexPaySession.set(false);
+        try {
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('vexpay_pending_session', JSON.stringify({
+              sessionId: res.sessionId,
+              transactionId: res.transactionId,
+              athleteId: this.athlete.id
+            }));
+          }
+        } catch {
+          // Ignorar si sessionStorage no está disponible
+        }
+        this.redirectToCheckout(res.checkoutUrl);
+      },
+      error: (err) => {
+        this.isCreatingVexPaySession.set(false);
+        this.errorMessage.set(err.error?.detail || err.error?.message || 'No se pudo iniciar la sesión de pago con VexPay.');
+      }
+    });
+  }
+
+  redirectToCheckout(url: string): void {
+    if (typeof window !== 'undefined' && url) {
+      window.location.assign(url);
+    }
+  }
+
   closeModal(): void {
-    if (!this.isSubmitting() && !this.isSubmittingBinance() && !this.isSubmittingZelle() && !this.isGeneratingBinance()) {
+    if (!this.isSubmitting() && !this.isSubmittingBinance() && !this.isSubmittingZelle() && !this.isGeneratingBinance() && !this.isCreatingVexPaySession()) {
       this.close.emit();
     }
   }

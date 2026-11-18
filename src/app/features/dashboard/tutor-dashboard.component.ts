@@ -1,9 +1,10 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe, DOCUMENT } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { AthleteService } from '../../core/services/athlete.service';
 import { VideoUploadService } from '../../core/services/video-upload.service';
+import { PaymentService } from '../../core/services/payment.service';
 import { AthleteSummary } from '../../core/models/athlete.model';
 import { AthleteVideoResponse } from '../../core/models/video.model';
 import { VideoUploaderComponent } from '../videos/video-uploader.component';
@@ -96,6 +97,63 @@ import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
       color: #10B981;
       font-size: 16px;
       cursor: pointer;
+    }
+
+    /* BANNER DE RETORNO VEXPAY (TS-78) */
+    .vexpay-return-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      background: rgba(14, 165, 233, 0.1);
+      color: #E0F2FE;
+      flex-wrap: wrap;
+    }
+
+    .vexpay-return-banner.vexpay-activated {
+      border-color: rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.14);
+      color: #D1FAE5;
+    }
+
+    .vexpay-return-banner.vexpay-pending {
+      border-color: rgba(245, 158, 11, 0.45);
+      background: rgba(245, 158, 11, 0.12);
+      color: #FEF3C7;
+    }
+
+    .vexpay-return-banner.vexpay-cancelled,
+    .vexpay-return-banner.vexpay-error {
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.12);
+      color: #FEE2E2;
+    }
+
+    .vexpay-return-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .vexpay-return-content strong {
+      font-size: 14px;
+    }
+
+    .vexpay-return-content span {
+      font-size: 13px;
+      opacity: 0.92;
+    }
+
+    .vexpay-return-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     /* CABECERA DE ATLETAS */
@@ -1432,7 +1490,14 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
   athleteService = inject(AthleteService);
   videoUploadService = inject(VideoUploadService);
+  paymentService = inject(PaymentService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private document = inject(DOCUMENT);
+
+  vexPayReturnStatus: 'VERIFYING' | 'ACTIVATED' | 'PENDING' | 'CANCELLED' | 'ERROR' | null = null;
+  vexPayReturnMessage: string | null = null;
+  vexPayReturnSessionId: string | null = null;
 
   athletes: AthleteSummary[] = [];
   recentVideos: AthleteVideoResponse[] = [];
@@ -1472,6 +1537,7 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
   isDeletingPhoto = false;
 
   ngOnInit(): void {
+    this.handleVexPayReturnParams();
     if (!this.authService.currentUser() && this.authService.token()) {
       this.authService.fetchCurrentUser().subscribe({
         next: () => {
@@ -1483,6 +1549,102 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
       this.loadAthletes();
       this.loadRadarMetrics();
     }
+  }
+
+  handleVexPayReturnParams(): void {
+    const queryMap = this.route.snapshot?.queryParamMap;
+    if (!queryMap) return;
+
+    const paymentParam = queryMap.get('payment');
+    const sessionIdParam = queryMap.get('session_id');
+    const txIdParam = queryMap.get('txId');
+
+    if (!paymentParam && !sessionIdParam) {
+      return;
+    }
+
+    let storedSessionId: string | null = null;
+    let storedTxId: string | null = null;
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const raw = sessionStorage.getItem('vexpay_pending_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          storedSessionId = parsed.sessionId || null;
+          storedTxId = parsed.transactionId || null;
+        }
+      }
+    } catch {
+      // Ignorar errores de almacenamiento
+    }
+
+    if (paymentParam === 'vexpay_cancelled') {
+      this.vexPayReturnStatus = 'CANCELLED';
+      this.vexPayReturnMessage = 'Cancelaste el pago en VexPay. No se realizó ningún cobro y puedes intentarlo nuevamente cuando lo necesites.';
+      this.clearStoredVexPaySession();
+      this.clearUrlQueryParams();
+      return;
+    }
+
+    if (paymentParam === 'vexpay_return' || sessionIdParam) {
+      const targetId = sessionIdParam || storedSessionId || txIdParam || storedTxId;
+      if (targetId) {
+        this.verifyVexPayPayment(targetId);
+      }
+      this.clearUrlQueryParams();
+    }
+  }
+
+  verifyVexPayPayment(sessionOrTxId: string): void {
+    this.vexPayReturnSessionId = sessionOrTxId;
+    this.vexPayReturnStatus = 'VERIFYING';
+    this.vexPayReturnMessage = 'Verificando confirmación de pago con VexPay...';
+
+    this.paymentService.verifyVexPaySession(sessionOrTxId).subscribe({
+      next: (res) => {
+        if (res.activated || res.transactionStatus === 'APPROVED') {
+          this.vexPayReturnStatus = 'ACTIVATED';
+          this.vexPayReturnMessage = res.message || `¡Plan Pro activado exitosamente para ${res.athleteName}!`;
+          this.clearStoredVexPaySession();
+          this.loadAthletes();
+        } else if (res.transactionStatus === 'REJECTED' || res.transactionStatus === 'REVERSED') {
+          this.vexPayReturnStatus = 'CANCELLED';
+          this.vexPayReturnMessage = res.message || 'La sesión de pago no se completó.';
+          this.clearStoredVexPaySession();
+        } else {
+          this.vexPayReturnStatus = 'PENDING';
+          this.vexPayReturnMessage = res.message || 'Tu pago se encuentra en verificación bancaria. Pulsa Verificar nuevamente en unos segundos.';
+        }
+      },
+      error: (err) => {
+        this.vexPayReturnStatus = 'ERROR';
+        this.vexPayReturnMessage = err.error?.detail || err.error?.message || 'No se pudo consultar el estado de la sesión VexPay en este momento.';
+      }
+    });
+  }
+
+  dismissVexPayNotice(): void {
+    this.vexPayReturnStatus = null;
+    this.vexPayReturnMessage = null;
+    this.vexPayReturnSessionId = null;
+  }
+
+  private clearStoredVexPaySession(): void {
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem('vexpay_pending_session');
+      }
+    } catch {
+      // Ignorar
+    }
+  }
+
+  private clearUrlQueryParams(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true
+    });
   }
 
   loadRadarMetrics(): void {
