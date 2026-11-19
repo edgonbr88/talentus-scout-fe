@@ -71,6 +71,7 @@
               type="date"
               class="form-control"
               formControlName="birthDate"
+              [max]="maxBirthDate"
               (change)="onBirthDateChange()"
               [class.is-invalid]="isFieldInvalid('birthDate') || ageError"
             />

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RegisterAthleteComponent } from './register-athlete.component';
 import { AuthService } from '../../../core/auth/auth.service';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 describe('RegisterAthleteComponent', () => {
@@ -18,12 +18,14 @@ describe('RegisterAthleteComponent', () => {
       imports: [RegisterAthleteComponent],
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: Router, useValue: routerSpy }
+        provideRouter([])
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(RegisterAthleteComponent);
     component = fixture.componentInstance;
+    spyOn(TestBed.inject(Router), 'navigate');
+    routerSpy = { navigate: TestBed.inject(Router).navigate } as any;
     fixture.detectChanges();
   });
 
@@ -132,5 +134,27 @@ describe('RegisterAthleteComponent', () => {
 
     component.closeTermsModal();
     expect(component.showTermsModal).toBeFalse();
+  });
+
+  it('should detect future birthDate, set isFutureBirthDate true and prevent step 2', () => {
+    component.accountForm.patchValue({
+      fullName: 'Atleta Futuro',
+      email: 'futuro@test.com',
+      password: 'Password123!',
+      phoneNumber: '+584121234567',
+      birthDate: '2035-01-01',
+      acceptTerms: true,
+      acceptInstitutionalDiffusion: true
+    });
+
+    component.onBirthDateChange();
+
+    expect(component.isFutureBirthDate).toBeTrue();
+    expect(component.isUnderage).toBeFalse();
+    expect(component.calculatedAge).toBeNull();
+    expect(component.errorMessage).toContain('La fecha de nacimiento no puede ser futura');
+
+    component.goToStep2();
+    expect(component.currentStep).toBe(1);
   });
 });
