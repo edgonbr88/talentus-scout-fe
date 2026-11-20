@@ -4,6 +4,10 @@ import { Observable } from 'rxjs';
 import { PageResponse, ScoutDirectoryAthleteItem, ScoutDirectoryFilters } from '../models/scout-directory.model';
 import { ContactClickResponse } from '../models/scout-contact.model';
 import { CreateAthleteAchievementRequest, PublicBadgeDto } from '../models/athlete.model';
+import {
+  ScoutTechnicalAnalysis,
+  UpsertScoutTechnicalAnalysisRequest
+} from '../models/scout-technical-analysis.model';
 
 @Injectable({
   providedIn: 'root'
@@ -64,5 +68,31 @@ export class ScoutDirectoryService {
     payload: CreateAthleteAchievementRequest
   ): Observable<PublicBadgeDto> {
     return this.http.post<PublicBadgeDto>(`/api/v1/scout/athletes/${athleteId}/achievements`, payload);
+  }
+
+  getTechnicalAnalyses(athleteId: string): Observable<ScoutTechnicalAnalysis[]> {
+    return this.http.get<ScoutTechnicalAnalysis[]>(`/api/v1/scout/athletes/${athleteId}/technical-analyses`);
+  }
+
+  createTechnicalAnalysis(
+    athleteId: string,
+    payload: UpsertScoutTechnicalAnalysisRequest
+  ): Observable<ScoutTechnicalAnalysis> {
+    return this.http.post<ScoutTechnicalAnalysis>(`/api/v1/scout/athletes/${athleteId}/technical-analyses`, payload);
+  }
+
+  updateTechnicalAnalysis(
+    athleteId: string,
+    analysisId: string,
+    payload: UpsertScoutTechnicalAnalysisRequest
+  ): Observable<ScoutTechnicalAnalysis> {
+    return this.http.put<ScoutTechnicalAnalysis>(
+      `/api/v1/scout/athletes/${athleteId}/technical-analyses/${analysisId}`,
+      payload
+    );
+  }
+
+  deleteTechnicalAnalysis(athleteId: string, analysisId: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/scout/athletes/${athleteId}/technical-analyses/${analysisId}`);
   }
 }
