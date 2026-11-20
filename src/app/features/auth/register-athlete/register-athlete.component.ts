@@ -25,6 +25,12 @@ export class RegisterAthleteComponent {
 
   calculatedAge: number | null = null;
   isUnderage = false;
+  isFutureBirthDate = false;
+  maxBirthDate: string = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  })();
 
   idDocumentFile: File | null = null;
   selfieFile: File | null = null;
@@ -71,11 +77,23 @@ export class RegisterAthleteComponent {
     if (!value) {
       this.calculatedAge = null;
       this.isUnderage = false;
+      this.isFutureBirthDate = false;
       return;
     }
 
-    const birthDate = new Date(value);
+    const birthDate = new Date(value + 'T00:00:00');
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (birthDate >= today) {
+      this.isFutureBirthDate = true;
+      this.isUnderage = false;
+      this.calculatedAge = null;
+      this.errorMessage = 'La fecha de nacimiento no puede ser futura ni igual a la fecha actual.';
+      return;
+    }
+
+    this.isFutureBirthDate = false;
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
@@ -84,11 +102,21 @@ export class RegisterAthleteComponent {
 
     this.calculatedAge = age;
     this.isUnderage = age < 18;
+    if (this.isUnderage) {
+      this.errorMessage = 'Los atletas menores de 18 años deben ser registrados y representados por su tutor legal bajo la LOPNNA.';
+    } else {
+      this.errorMessage = null;
+    }
   }
 
   goToStep2(): void {
     this.accountForm.markAllAsTouched();
     this.onBirthDateChange();
+
+    if (this.isFutureBirthDate) {
+      this.errorMessage = 'La fecha de nacimiento no puede ser futura ni igual a la fecha actual.';
+      return;
+    }
 
     if (this.isUnderage) {
       this.errorMessage = 'Los atletas menores de 18 años deben ser registrados y representados por su tutor legal bajo la LOPNNA.';

@@ -246,5 +246,33 @@ describe('RegisterAthleteModalComponent - TS-41 Photo Upload', () => {
       customClubCountry: 'Venezuela'
     }));
   });
+
+  it('should validate birthDate restrictions: future/today date, < 4 years and > 21 years', () => {
+    // Fecha futura
+    component.athleteForm.get('birthDate')?.setValue('2035-01-01');
+    component.onBirthDateChange();
+    expect(component.ageError).toBe('La fecha de nacimiento no puede ser futura ni igual a la fecha actual.');
+
+    // Fecha menor de 4 años
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    component.athleteForm.get('birthDate')?.setValue(twoYearsAgo.toISOString().split('T')[0]);
+    component.onBirthDateChange();
+    expect(component.ageError).toBe('El atleta debe tener al menos 4 años de edad para registrarse.');
+
+    // Fecha mayor de 21 años
+    const twentyThreeYearsAgo = new Date();
+    twentyThreeYearsAgo.setFullYear(twentyThreeYearsAgo.getFullYear() - 23);
+    component.athleteForm.get('birthDate')?.setValue(twentyThreeYearsAgo.toISOString().split('T')[0]);
+    component.onBirthDateChange();
+    expect(component.ageError).toContain('categorías formativas juveniles');
+
+    // Fecha válida (12 años)
+    const twelveYearsAgo = new Date();
+    twelveYearsAgo.setFullYear(twelveYearsAgo.getFullYear() - 12);
+    component.athleteForm.get('birthDate')?.setValue(twelveYearsAgo.toISOString().split('T')[0]);
+    component.onBirthDateChange();
+    expect(component.ageError).toBeNull();
+  });
 });
 

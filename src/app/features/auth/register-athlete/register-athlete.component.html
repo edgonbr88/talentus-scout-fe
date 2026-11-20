@@ -101,9 +101,10 @@
             id="birthDate"
             type="date"
             formControlName="birthDate"
+            [max]="maxBirthDate"
             class="form-control"
             (change)="onBirthDateChange()"
-            [class.is-invalid]="accountForm.get('birthDate')?.touched && accountForm.get('birthDate')?.invalid"
+            [class.is-invalid]="(accountForm.get('birthDate')?.touched && accountForm.get('birthDate')?.invalid) || isFutureBirthDate"
           />
           <span class="field-error" *ngIf="accountForm.get('birthDate')?.touched && accountForm.get('birthDate')?.invalid">
             Fecha de nacimiento requerida.
@@ -111,8 +112,18 @@
         </div>
       </div>
 
+      <!-- ALERTA DE FECHA FUTURA O IGUAL A HOY -->
+      <div *ngIf="isFutureBirthDate" class="alert alert-danger" role="alert" style="margin-bottom: 16px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>La fecha de nacimiento no puede ser futura ni igual a la fecha actual.</span>
+      </div>
+
       <!-- BADGE / ALERTA DE EDAD DINÁMICA -->
-      <div *ngIf="calculatedAge !== null" class="age-feedback-container">
+      <div *ngIf="calculatedAge !== null && !isFutureBirthDate" class="age-feedback-container">
         <!-- CASO MAYOR DE EDAD (>= 18) -->
         <div *ngIf="!isUnderage" class="age-success-pill">
           <span class="pill-icon">✓</span>
@@ -139,7 +150,7 @@
       </div>
 
       <!-- CHECKBOXES LEGALES -->
-      <div class="legal-consents-container" *ngIf="!isUnderage">
+      <div class="legal-consents-container" *ngIf="!isUnderage && !isFutureBirthDate">
         <label class="consent-checkbox">
           <input type="checkbox" formControlName="acceptTerms" />
           <span class="checkbox-label">
@@ -159,7 +170,7 @@
         <button
           type="submit"
           class="btn btn-primary btn-block btn-lg"
-          [disabled]="accountForm.invalid || isUnderage || calculatedAge === null"
+          [disabled]="accountForm.invalid || isUnderage || isFutureBirthDate || calculatedAge === null"
         >
           Continuar a Ficha Deportiva (Paso 2) →
         </button>

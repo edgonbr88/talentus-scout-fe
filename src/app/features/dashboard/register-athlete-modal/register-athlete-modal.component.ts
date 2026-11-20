@@ -452,6 +452,7 @@ export class RegisterAthleteModalComponent implements OnInit {
   isSubmitting = false;
   errorMessage: string | null = null;
   ageError: string | null = null;
+  maxBirthDate: string = '';
   clubs: ClubDto[] = [];
   selectedPhotoFile: File | null = null;
   photoPreviewUrl: string | null = null;
@@ -517,6 +518,9 @@ export class RegisterAthleteModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    this.maxBirthDate = yesterday.toISOString().split('T')[0];
     this.loadClubs();
     this.setupClubSelectionListener();
   }
@@ -574,10 +578,12 @@ export class RegisterAthleteModalComponent implements OnInit {
       this.ageError = null;
       return;
     }
-    const birth = new Date(val);
+    const birth = new Date(val + 'T00:00:00');
     const today = new Date();
-    if (birth > today) {
-      this.ageError = 'La fecha de nacimiento no puede ser futura.';
+    today.setHours(0, 0, 0, 0);
+
+    if (birth >= today) {
+      this.ageError = 'La fecha de nacimiento no puede ser futura ni igual a la fecha actual.';
       return;
     }
     let age = today.getFullYear() - birth.getFullYear();
@@ -585,8 +591,10 @@ export class RegisterAthleteModalComponent implements OnInit {
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
-    if (age >= 21) {
-      this.ageError = `El atleta tiene ${age} años. La plataforma está reservada para categorías formativas juveniles (< 21 años).`;
+    if (age < 4) {
+      this.ageError = 'El atleta debe tener al menos 4 años de edad para registrarse.';
+    } else if (age > 21) {
+      this.ageError = `El atleta tiene ${age} años. La plataforma está reservada para categorías formativas juveniles (hasta 21 años).`;
     } else {
       this.ageError = null;
     }
