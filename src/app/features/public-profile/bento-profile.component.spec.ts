@@ -67,7 +67,11 @@ describe('BentoProfileComponent', () => {
     scoutDirectoryServiceSpy = jasmine.createSpyObj('ScoutDirectoryService', [
       'logAthleteView',
       'contactAthleteTutor',
-      'createAthleteAchievement'
+      'createAthleteAchievement',
+      'getTechnicalAnalyses',
+      'createTechnicalAnalysis',
+      'updateTechnicalAnalysis',
+      'deleteTechnicalAnalysis'
     ]);
     scoutDirectoryServiceSpy.logAthleteView.and.returnValue(of(null as any));
     scoutDirectoryServiceSpy.contactAthleteTutor.and.returnValue(of({ whatsappUrl: 'https://wa.me/test' } as any));
@@ -77,6 +81,7 @@ describe('BentoProfileComponent', () => {
       verified: true,
       organizationName: 'Deportivo Miranda Sub-16'
     }));
+    scoutDirectoryServiceSpy.getTechnicalAnalyses.and.returnValue(of([]));
     currentUserSignal = signal<any>(null);
     authServiceSpy = {
       isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(false),
@@ -224,6 +229,53 @@ describe('BentoProfileComponent', () => {
 
     expect(component.canRegisterClubAchievement()).toBeFalse();
     expect((fixture.nativeElement as HTMLElement).querySelector('.btn-register-achievement')).toBeNull();
+  });
+
+  it('should hide technical analyses section for anonymous, tutor, athlete and pending scout', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-scout-technical-analyses')).toBeNull();
+
+    currentUserSignal.set({ id: 't1', email: 't@test.com', fullName: 'Tutor', role: 'TUTOR' });
+    fixture.detectChanges();
+    expect(compiled.querySelector('app-scout-technical-analyses')).toBeNull();
+
+    currentUserSignal.set({ id: 'a1', email: 'a@test.com', fullName: 'Atleta', role: 'ATHLETE' });
+    fixture.detectChanges();
+    expect(compiled.querySelector('app-scout-technical-analyses')).toBeNull();
+
+    currentUserSignal.set({
+      id: 's-pend',
+      email: 'p@test.com',
+      fullName: 'Scout Pendiente',
+      role: 'SCOUT',
+      scoutVerificationStatus: 'PENDING'
+    });
+    fixture.detectChanges();
+    expect(compiled.querySelector('app-scout-technical-analyses')).toBeNull();
+  });
+
+  it('should render technical analyses section for approved scout from any club and admin', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    currentUserSignal.set({
+      id: 'scout-other',
+      email: 'scout@caracasfc.com',
+      fullName: 'Scout Caracas',
+      role: 'SCOUT',
+      scoutVerificationStatus: 'APPROVED',
+      organizationName: 'Caracas FC'
+    });
+    fixture.detectChanges();
+    expect(compiled.querySelector('app-scout-technical-analyses')).toBeTruthy();
+
+    currentUserSignal.set({
+      id: 'admin-1',
+      email: 'admin@talentus.com',
+      fullName: 'Admin',
+      role: 'ADMIN'
+    });
+    fixture.detectChanges();
+    expect(compiled.querySelector('app-scout-technical-analyses')).toBeTruthy();
   });
 });
 

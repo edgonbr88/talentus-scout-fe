@@ -1,0 +1,491 @@
+<section class="bento-card card-technical-analyses" aria-labelledby="scout-analyses-heading">
+  <header class="analyses-header">
+    <div class="analyses-header-copy">
+      <div class="analyses-title-row">
+        <h2 id="scout-analyses-heading" class="card-title">Evaluación Técnica de Scouting</h2>
+        <span class="privacy-pill">Uso interno entre scouts acreditados</span>
+      </div>
+      <p class="analyses-subtitle">
+        Observaciones técnicas en terreno compartidas entre scouts aprobados para {{ athleteName() }}. Cada scout puede mantener un informe propio y consultar el criterio de otros colegas.
+      </p>
+    </div>
+
+    @if (!myAnalysis() && !isLoading()) {
+      <button
+        type="button"
+        class="btn-write-analysis"
+        (click)="openCreateModal()">
+        Redactar mi análisis
+      </button>
+    }
+  </header>
+
+  @if (statusAnnouncement()) {
+    <div class="analysis-status-banner" role="status" aria-live="polite">
+      <span>{{ statusAnnouncement() }}</span>
+    </div>
+  }
+
+  @if (deleteError()) {
+    <div class="analysis-error-banner" role="alert">
+      <span>{{ deleteError() }}</span>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="analyses-loading" aria-busy="true">
+      <div class="mini-spinner"></div>
+      <span>Cargando análisis técnicos de scouting...</span>
+    </div>
+  } @else if (loadError()) {
+    <div class="analysis-error-banner" role="alert">
+      <span>{{ loadError() }}</span>
+      <button type="button" class="btn-retry-inline" (click)="loadAnalyses()">Reintentar</button>
+    </div>
+  } @else if (analyses().length === 0) {
+    <div class="analyses-empty-state">
+      <div class="empty-icon-ring" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="8" y1="13" x2="16" y2="13"></line>
+          <line x1="8" y1="17" x2="13" y2="17"></line>
+        </svg>
+      </div>
+      <h3 class="empty-heading">Aún no hay evaluaciones en terreno</h3>
+      <p class="empty-copy">
+        Si viste jugar a {{ athleteName() }} en cancha o revisaste su rendimiento, registra el primer informe técnico para compartirlo con la red de scouts.
+      </p>
+      <button type="button" class="btn-write-analysis" (click)="openCreateModal()">
+        Redactar mi análisis
+      </button>
+    </div>
+  } @else {
+    <div class="analyses-stack">
+      <!-- BLOQUE PROPIO DEL SCOUT AUTENTICADO -->
+      @if (myAnalysis(); as mine) {
+        <article class="analysis-report analysis-report-own" aria-labelledby="my-analysis-heading">
+          <div class="report-topbar">
+            <div class="report-author-block">
+              <div class="author-badge-row">
+                <span class="own-author-tag">Tu evaluación</span>
+                <h3 id="my-analysis-heading" class="report-author-name">{{ mine.scoutFullName }}</h3>
+              </div>
+              <p class="report-author-meta">
+                {{ mine.scoutRole }} en {{ mine.organizationName }} · Actualizado el {{ formatDate(mine.updatedAt) }}
+              </p>
+            </div>
+
+            <div class="report-actions">
+              <button
+                type="button"
+                class="btn-report-edit"
+                (click)="openEditModal(mine)">
+                Editar análisis
+              </button>
+              <button
+                type="button"
+                class="btn-report-delete"
+                (click)="requestDelete(mine.id)"
+                [disabled]="pendingDeleteId() === mine.id">
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          @if (pendingDeleteId() === mine.id) {
+            <div class="delete-confirm-bar" role="alert">
+              <p class="delete-confirm-text">
+                ¿Seguro que deseas eliminar tu análisis técnico? Esta acción no se puede deshacer.
+              </p>
+              <div class="delete-confirm-actions">
+                <button
+                  type="button"
+                  class="btn-confirm-cancel"
+                  (click)="cancelDelete()"
+                  [disabled]="isDeletingId() === mine.id">
+                  Conservar
+                </button>
+                <button
+                  type="button"
+                  class="btn-confirm-destroy"
+                  (click)="confirmDelete(mine)"
+                  [disabled]="isDeletingId() === mine.id">
+                  {{ isDeletingId() === mine.id ? 'Eliminando...' : 'Confirmar eliminación' }}
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="report-columns">
+            <div class="report-column column-strengths">
+              <h4 class="column-heading heading-strengths">
+                <span class="heading-marker marker-strength" aria-hidden="true"></span>
+                Fortalezas y Virtudes Destacadas
+              </h4>
+              <ul class="criteria-list">
+                @for (item of mine.strengths; track $index) {
+                  <li class="criteria-item">
+                    <strong class="criteria-title">{{ item.title }}:</strong>
+                    <span class="criteria-desc">{{ item.description }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+
+            <div class="report-column column-improvements">
+              <h4 class="column-heading heading-improvements">
+                <span class="heading-marker marker-improvement" aria-hidden="true"></span>
+                Áreas de Mejora y Enfoque Formativo
+              </h4>
+              <ul class="criteria-list">
+                @for (item of mine.improvementAreas; track $index) {
+                  <li class="criteria-item">
+                    <strong class="criteria-title">{{ item.title }}:</strong>
+                    <span class="criteria-desc">{{ item.description }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+
+          <div class="verdict-box">
+            <h4 class="verdict-heading">Dictamen de Scouting</h4>
+            <p class="verdict-copy">{{ mine.scoutingVerdict }}</p>
+          </div>
+        </article>
+      }
+
+      <!-- EVALUACIONES DE OTROS SCOUTS (SOLO LECTURA; ADMIN PUEDE MODERAR/ELIMINAR) -->
+      @if (otherAnalyses().length > 0) {
+        <div class="colleagues-section">
+          <div class="colleagues-header">
+            <h3 class="colleagues-title">
+              {{ myAnalysis() ? 'Análisis de Otros Scouts' : 'Evaluaciones Registradas por Scouts' }}
+            </h3>
+            <span class="colleagues-count">{{ otherAnalyses().length }} {{ otherAnalyses().length === 1 ? 'informe' : 'informes' }}</span>
+          </div>
+
+          <div class="colleagues-list">
+            @for (report of otherAnalyses(); track report.id) {
+              <article class="analysis-report analysis-report-colleague">
+                <div class="report-topbar">
+                  <div class="report-author-block">
+                    <h4 class="report-author-name">{{ report.scoutFullName }}</h4>
+                    <p class="report-author-meta">
+                      {{ report.scoutRole }} en {{ report.organizationName }} · {{ formatDate(report.updatedAt) }}
+                    </p>
+                  </div>
+
+                  @if (report.deletableByCurrentUser && isAdmin()) {
+                    <div class="report-actions">
+                      <button
+                        type="button"
+                        class="btn-report-delete"
+                        (click)="requestDelete(report.id)"
+                        [disabled]="pendingDeleteId() === report.id">
+                        Moderar / Eliminar
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                @if (pendingDeleteId() === report.id) {
+                  <div class="delete-confirm-bar" role="alert">
+                    <p class="delete-confirm-text">
+                      ¿Confirmas eliminar el análisis de {{ report.scoutFullName }} por moderación administrativa?
+                    </p>
+                    <div class="delete-confirm-actions">
+                      <button
+                        type="button"
+                        class="btn-confirm-cancel"
+                        (click)="cancelDelete()"
+                        [disabled]="isDeletingId() === report.id">
+                        Conservar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-confirm-destroy"
+                        (click)="confirmDelete(report)"
+                        [disabled]="isDeletingId() === report.id">
+                        {{ isDeletingId() === report.id ? 'Eliminando...' : 'Confirmar eliminación' }}
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                <div class="report-columns">
+                  <div class="report-column column-strengths">
+                    <h5 class="column-heading heading-strengths">
+                      <span class="heading-marker marker-strength" aria-hidden="true"></span>
+                      Fortalezas y Virtudes Destacadas
+                    </h5>
+                    <ul class="criteria-list">
+                      @for (item of report.strengths; track $index) {
+                        <li class="criteria-item">
+                          <strong class="criteria-title">{{ item.title }}:</strong>
+                          <span class="criteria-desc">{{ item.description }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+
+                  <div class="report-column column-improvements">
+                    <h5 class="column-heading heading-improvements">
+                      <span class="heading-marker marker-improvement" aria-hidden="true"></span>
+                      Áreas de Mejora y Enfoque Formativo
+                    </h5>
+                    <ul class="criteria-list">
+                      @for (item of report.improvementAreas; track $index) {
+                        <li class="criteria-item">
+                          <strong class="criteria-title">{{ item.title }}:</strong>
+                          <span class="criteria-desc">{{ item.description }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="verdict-box">
+                  <h5 class="verdict-heading">Dictamen de Scouting</h5>
+                  <p class="verdict-copy">{{ report.scoutingVerdict }}</p>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- DIÁLOGO NATIVO MODAL PARA CREAR / EDITAR MI ANÁLISIS TÉCNICO -->
+  <dialog
+    #analysisDialog
+    class="analysis-dialog"
+    closedby="any"
+    aria-labelledby="analysis-dialog-title"
+    (close)="onNativeDialogClose()"
+    (cancel)="onNativeDialogCancel($event)"
+    (pointerdown)="onDialogPointerDown($event)"
+    (pointerup)="onDialogPointerUp($event)">
+    <div class="dialog-shell">
+      <header class="dialog-header">
+        <div>
+          <h2 id="analysis-dialog-title" class="dialog-title">
+            {{ editingAnalysisId() ? 'Editar mi análisis técnico' : 'Nuevo análisis técnico de scouting' }}
+          </h2>
+          <p class="dialog-subtitle">
+            Evaluación confidencial para la red de scouts aprobados sobre {{ athleteName() }}.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="btn-dialog-close"
+          (click)="closeModal()"
+          aria-label="Cerrar formulario de análisis técnico">
+          ×
+        </button>
+      </header>
+
+      <form [formGroup]="analysisForm" (ngSubmit)="submitAnalysis()" class="dialog-form" novalidate>
+        <!-- GRUPO 1: FORTALEZAS Y VIRTUDES DESTACADAS -->
+        <fieldset class="form-fieldset fieldset-strengths" formArrayName="strengths">
+          <div class="fieldset-header">
+            <legend class="fieldset-legend legend-strengths">Fortalezas y Virtudes Destacadas</legend>
+            <button
+              type="button"
+              class="btn-add-item btn-add-strength"
+              (click)="addStrength()"
+              [disabled]="strengthsArray.length >= 10">
+              + Añadir fortaleza
+            </button>
+          </div>
+
+          <div class="items-editor-list">
+            @for (group of strengthsArray.controls; track $index) {
+              <div class="item-editor-card" [formGroupName]="$index">
+                <div class="item-editor-top">
+                  <span class="item-counter">Fortaleza {{ $index + 1 }}</span>
+                  @if (strengthsArray.length > 1) {
+                    <button
+                      type="button"
+                      class="btn-remove-item"
+                      (click)="removeStrength($index)"
+                      [attr.aria-label]="'Quitar fortaleza ' + ($index + 1)">
+                      Quitar
+                    </button>
+                  }
+                </div>
+
+                <div class="field-group">
+                  <label [for]="'strength-title-' + $index" class="editor-label">
+                    Concepto o virtud <span aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    [id]="'strength-title-' + $index"
+                    type="text"
+                    formControlName="title"
+                    class="editor-input"
+                    maxlength="120"
+                    required
+                    [attr.autofocus]="$index === 0 ? '' : null"
+                    [attr.aria-invalid]="shouldShowControlError(group.get('title')) ? 'true' : null"
+                    [attr.aria-describedby]="shouldShowControlError(group.get('title')) ? 'strength-title-err-' + $index : null"
+                    placeholder="Ej. Inteligencia táctica y lectura de juego" />
+                  @if (shouldShowControlError(group.get('title'))) {
+                    <span [id]="'strength-title-err-' + $index" class="editor-error" role="alert">
+                      Ingresa un título breve (máximo 120 caracteres).
+                    </span>
+                  }
+                </div>
+
+                <div class="field-group">
+                  <label [for]="'strength-desc-' + $index" class="editor-label">
+                    Sustento técnico observado <span aria-hidden="true">*</span>
+                  </label>
+                  <textarea
+                    [id]="'strength-desc-' + $index"
+                    formControlName="description"
+                    class="editor-input editor-textarea"
+                    rows="2"
+                    maxlength="600"
+                    required
+                    [attr.aria-invalid]="shouldShowControlError(group.get('description')) ? 'true' : null"
+                    [attr.aria-describedby]="shouldShowControlError(group.get('description')) ? 'strength-desc-err-' + $index : null"
+                    placeholder="Ej. Entiende los tiempos del partido, se asocia en espacios reducidos y da continuidad limpia a la posesión."></textarea>
+                  @if (shouldShowControlError(group.get('description'))) {
+                    <span [id]="'strength-desc-err-' + $index" class="editor-error" role="alert">
+                      Describe el sustento técnico observado (máximo 600 caracteres).
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </fieldset>
+
+        <!-- GRUPO 2: ÁREAS DE MEJORA Y ENFOQUE FORMATIVO -->
+        <fieldset class="form-fieldset fieldset-improvements" formArrayName="improvementAreas">
+          <div class="fieldset-header">
+            <legend class="fieldset-legend legend-improvements">Áreas de Mejora y Enfoque Formativo</legend>
+            <button
+              type="button"
+              class="btn-add-item btn-add-improvement"
+              (click)="addImprovementArea()"
+              [disabled]="improvementAreasArray.length >= 10">
+              + Añadir área de mejora
+            </button>
+          </div>
+
+          <div class="items-editor-list">
+            @for (group of improvementAreasArray.controls; track $index) {
+              <div class="item-editor-card" [formGroupName]="$index">
+                <div class="item-editor-top">
+                  <span class="item-counter">Enfoque {{ $index + 1 }}</span>
+                  @if (improvementAreasArray.length > 1) {
+                    <button
+                      type="button"
+                      class="btn-remove-item"
+                      (click)="removeImprovementArea($index)"
+                      [attr.aria-label]="'Quitar área de mejora ' + ($index + 1)">
+                      Quitar
+                    </button>
+                  }
+                </div>
+
+                <div class="field-group">
+                  <label [for]="'improvement-title-' + $index" class="editor-label">
+                    Aspecto a potenciar <span aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    [id]="'improvement-title-' + $index"
+                    type="text"
+                    formControlName="title"
+                    class="editor-input"
+                    maxlength="120"
+                    required
+                    [attr.aria-invalid]="shouldShowControlError(group.get('title')) ? 'true' : null"
+                    [attr.aria-describedby]="shouldShowControlError(group.get('title')) ? 'improvement-title-err-' + $index : null"
+                    placeholder="Ej. Técnica de golpeo y elevación de balón" />
+                  @if (shouldShowControlError(group.get('title'))) {
+                    <span [id]="'improvement-title-err-' + $index" class="editor-error" role="alert">
+                      Ingresa un título breve (máximo 120 caracteres).
+                    </span>
+                  }
+                </div>
+
+                <div class="field-group">
+                  <label [for]="'improvement-desc-' + $index" class="editor-label">
+                    Detalle formativo recomendado <span aria-hidden="true">*</span>
+                  </label>
+                  <textarea
+                    [id]="'improvement-desc-' + $index"
+                    formControlName="description"
+                    class="editor-input editor-textarea"
+                    rows="2"
+                    maxlength="600"
+                    required
+                    [attr.aria-invalid]="shouldShowControlError(group.get('description')) ? 'true' : null"
+                    [attr.aria-describedby]="shouldShowControlError(group.get('description')) ? 'improvement-desc-err-' + $index : null"
+                    placeholder="Ej. Perfeccionar mecánica de impacto y superficie de contacto para lograr mayor alcance en cambios de orientación."></textarea>
+                  @if (shouldShowControlError(group.get('description'))) {
+                    <span [id]="'improvement-desc-err-' + $index" class="editor-error" role="alert">
+                      Describe el enfoque formativo recomendado (máximo 600 caracteres).
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </fieldset>
+
+        <!-- GRUPO 3: DICTAMEN DE SCOUTING -->
+        <div class="field-group verdict-field-group">
+          <label for="scouting-verdict-input" class="editor-label verdict-field-label">
+            Dictamen de Scouting <span aria-hidden="true">*</span>
+          </label>
+          <span id="scouting-verdict-hint" class="editor-hint">
+            Síntesis profesional de proyección, encaje posicional y recomendación para otros reclutadores (máx. 2000 caracteres).
+          </span>
+          <textarea
+            id="scouting-verdict-input"
+            formControlName="scoutingVerdict"
+            class="editor-input editor-textarea editor-verdict"
+            rows="4"
+            maxlength="2000"
+            required
+            [attr.aria-invalid]="shouldShowControlError(analysisForm.get('scoutingVerdict')) ? 'true' : null"
+            [attr.aria-describedby]="shouldShowControlError(analysisForm.get('scoutingVerdict')) ? 'scouting-verdict-hint scouting-verdict-err' : 'scouting-verdict-hint'"
+            placeholder="Resume tu evaluación global tras la observación del atleta..."></textarea>
+          @if (shouldShowControlError(analysisForm.get('scoutingVerdict'))) {
+            <span id="scouting-verdict-err" class="editor-error" role="alert">
+              Redacta el dictamen técnico de scouting (entre 1 y 2000 caracteres).
+            </span>
+          }
+        </div>
+
+        @if (formError()) {
+          <div class="analysis-error-banner" role="alert">
+            <span>{{ formError() }}</span>
+          </div>
+        }
+
+        <footer class="dialog-actions">
+          <button
+            type="button"
+            class="btn-dialog-cancel"
+            (click)="closeModal()"
+            [disabled]="isSaving()">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn-dialog-submit"
+            [disabled]="isSaving()">
+            {{ isSaving() ? 'Guardando...' : (editingAnalysisId() ? 'Actualizar análisis' : 'Guardar análisis') }}
+          </button>
+        </footer>
+      </form>
+    </div>
+  </dialog>
+</section>
