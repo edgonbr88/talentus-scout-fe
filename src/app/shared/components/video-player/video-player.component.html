@@ -1,10 +1,17 @@
-<div class="player-container">
+<div
+  class="player-container"
+  [class.is-portrait]="isPortrait"
+  [style.--video-aspect-ratio]="videoAspectRatio"
+  [style.--video-ratio]="videoRatio"
+>
   <video
     #videoElement
     class="video-element"
     playsinline
+    preload="metadata"
     controls
     [poster]="thumbnailUrl || ''"
+    (loadedmetadata)="onLoadedMetadata()"
     (play)="onPlay()"
     (pause)="onPause()"
     (error)="onError()"
