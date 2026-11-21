@@ -33,6 +33,9 @@ export class VideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
   public isLoading = false;
   public isMuted = false;
   public hasError = false;
+  public isPortrait = false;
+  public videoAspectRatio = '16 / 9';
+  public videoRatio = 16 / 9;
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
@@ -42,6 +45,7 @@ export class VideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['playbackUrl'] && !changes['playbackUrl'].isFirstChange()) {
+      this.resetAspectRatio();
       if (isPlatformBrowser(this.platformId)) {
         this.destroyHls();
         this.initPlayer();
@@ -116,6 +120,23 @@ export class VideoPlayerComponent implements OnInit, OnChanges, OnDestroy {
   onError(): void {
     this.hasError = true;
     this.isLoading = false;
+  }
+
+  onLoadedMetadata(): void {
+    const video = this.videoRef?.nativeElement;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      return;
+    }
+
+    this.videoAspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+    this.videoRatio = video.videoWidth / video.videoHeight;
+    this.isPortrait = video.videoHeight > video.videoWidth;
+  }
+
+  private resetAspectRatio(): void {
+    this.isPortrait = false;
+    this.videoAspectRatio = '16 / 9';
+    this.videoRatio = 16 / 9;
   }
 
   private destroyHls(): void {
