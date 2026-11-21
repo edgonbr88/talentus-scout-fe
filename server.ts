@@ -19,10 +19,21 @@ export function app(): express.Express {
 
   // Example Express Rest API endpoints
   // server.get('/api/**', (req, res) => { });
-  // Serve static files from /browser
+  const noCacheHtml = (res: express.Response): void => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  };
+
+  // Serve static files from /browser (HTML documents must never be cached)
   server.get('**', express.static(browserDistFolder, {
     maxAge: '1y',
     index: 'index.html',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        noCacheHtml(res);
+      }
+    },
   }));
 
   // Rutas protegidas que dependen de autenticación en navegador (localStorage) usan shell CSR puro
@@ -34,6 +45,7 @@ export function app(): express.Express {
     const { protocol, originalUrl, baseUrl, headers, path } = req;
 
     if (csrOnlyPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+      noCacheHtml(res);
       res.sendFile(csrIndexHtml);
       return;
     }
@@ -46,7 +58,10 @@ export function app(): express.Express {
         publicPath: browserDistFolder,
         providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
       })
-      .then((html) => res.send(html))
+      .then((html) => {
+        noCacheHtml(res);
+        res.send(html);
+      })
       .catch((err) => next(err));
   });
 
