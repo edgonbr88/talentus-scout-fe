@@ -63,6 +63,7 @@ describe('ScoutBulkImportComponent', () => {
     bulkImportServiceSpy = jasmine.createSpyObj('BulkImportService', [
       'uploadFile',
       'importGoogleSheet',
+      'registerIndividualAthlete',
       'getJobStatus',
       'getScoutJobs',
       'downloadTemplate',
@@ -219,5 +220,75 @@ describe('ScoutBulkImportComponent', () => {
       processedRows: 25
     };
     expect(component.calculateProgress()).toBe(50);
+  });
+
+  it('debe alternar a la pestaña de registro individual y validar campos obligatorios (TS-82)', () => {
+    component.setTab('individual');
+    expect(component.activeTab).toBe('individual');
+
+    component.submitIndividualAthlete();
+    expect(bulkImportServiceSpy.registerIndividualAthlete).not.toHaveBeenCalled();
+    expect(component.individualError).toContain('Revisa los campos obligatorios');
+  });
+
+  it('debe registrar un atleta individualmente y mostrar confirmación LOPNNA (TS-82)', () => {
+    bulkImportServiceSpy.registerIndividualAthlete.and.returnValue(of({
+      athleteId: 'ath-99',
+      slug: 'mateo-ramirez',
+      athleteFullName: 'Mateo Ramírez',
+      clubName: 'Academia Talentus',
+      tutorEmail: 'tutor@ejemplo.com',
+      isNewTutor: true,
+      legalVerificationStatus: 'PENDING_REVIEW'
+    }));
+
+    component.setTab('individual');
+    component.individualForm.patchValue({
+      primerNombre: 'Mateo',
+      primerApellido: 'Ramírez',
+      fechaNacimiento: '2011-04-18',
+      genero: 'Masculino',
+      posicionPrincipal: 'Delantero Centro',
+      pieDominante: 'Derecho',
+      nacionalidad: 'Venezuela',
+      alturaCm: 170,
+      pesoKg: 60,
+      nombreCompletoTutor: 'José Ramírez',
+      correoTutor: 'tutor@ejemplo.com',
+      telefonoTutor: '+584121234567'
+    });
+
+    component.submitIndividualAthlete();
+
+    expect(bulkImportServiceSpy.registerIndividualAthlete).toHaveBeenCalledWith(jasmine.objectContaining({
+      primerNombre: 'Mateo',
+      primerApellido: 'Ramírez',
+      correoTutor: 'tutor@ejemplo.com'
+    }));
+    expect(component.individualSuccess?.athleteFullName).toBe('Mateo Ramírez');
+    expect(component.individualSuccess?.legalVerificationStatus).toBe('PENDING_REVIEW');
+    expect(component.individualError).toBeNull();
+  });
+
+  it('debe mostrar el mensaje de error cuando falla el registro individual (TS-82)', () => {
+    bulkImportServiceSpy.registerIndividualAthlete.and.returnValue(
+      throwError(() => ({ status: 409, error: { message: 'El atleta con cédula/DNI V-31234567 ya se encuentra registrado en el sistema' } }))
+    );
+
+    component.setTab('individual');
+    component.individualForm.patchValue({
+      primerNombre: 'Mateo',
+      primerApellido: 'Ramírez',
+      fechaNacimiento: '2011-04-18',
+      posicionPrincipal: 'Delantero Centro',
+      nombreCompletoTutor: 'José Ramírez',
+      correoTutor: 'tutor@ejemplo.com'
+    });
+
+    component.submitIndividualAthlete();
+
+    expect(component.isSubmittingIndividual).toBeFalse();
+    expect(component.individualSuccess).toBeNull();
+    expect(component.individualError).toContain('ya se encuentra registrado');
   });
 });

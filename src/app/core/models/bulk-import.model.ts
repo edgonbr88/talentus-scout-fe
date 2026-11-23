@@ -38,3 +38,33 @@ export interface TutorRejectionRequest {
   token: string;
   reason?: string;
 }
+
+export interface ScoutIndividualAthleteRequest {
+  primerNombre: string;
+  segundoNombre?: string | null;
+  primerApellido: string;
+  segundoApellido?: string | null;
+  cedulaIdentidadAtleta?: string | null;
+  fechaNacimiento: string;
+  genero?: string | null;
+  posicionPrincipal: string;
+  posicionSecundaria?: string | null;
+  pieDominante?: string | null;
+  nacionalidad?: string | null;
+  alturaCm?: number | null;
+  pesoKg?: number | null;
+  nombreCompletoTutor: string;
+  cedulaIdentidadTutor?: string | null;
+  correoTutor: string;
+  telefonoTutor?: string | null;
+}
+
+export interface ScoutIndividualAthleteResponse {
+  athleteId: string;
+  slug: string;
+  athleteFullName: string;
+  clubName: string;
+  tutorEmail: string;
+  isNewTutor: boolean;
+  legalVerificationStatus: string;
+}

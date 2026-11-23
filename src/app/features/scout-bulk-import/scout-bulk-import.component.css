@@ -165,6 +165,7 @@
 .tabs-nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 16px;
@@ -793,4 +794,125 @@
   background: rgba(245, 158, 11, 0.22);
   border-color: var(--color-accent-gold);
   color: #FFFFFF;
+}
+
+/* Registro Individual (TS-82) */
+.individual-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.club-readonly-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.club-banner-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.club-banner-value {
+  font-size: 14px;
+  color: var(--color-accent-pitch);
+}
+
+.individual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-section-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin: 0;
+  background: rgba(10, 15, 29, 0.35);
+}
+
+.form-section-legend {
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #f87171;
+}
+
+.individual-success-card {
+  padding: 18px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.success-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.success-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-accent-pitch);
+}
+
+.lopnna-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.success-athlete-title {
+  margin: 0;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.success-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
 }
