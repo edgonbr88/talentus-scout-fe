@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ScoutDirectoryComponent } from './scout-directory.component';
 import { ScoutDirectoryService } from '../../core/services/scout-directory.service';
 import { ActivatedRoute } from '@angular/router';
@@ -22,6 +22,8 @@ describe('ScoutDirectoryComponent', () => {
       category: 'Sub-17',
       primaryPosition: 'DELANTERO_CENTRO',
       preferredFoot: 'ZURDO',
+      heightCm: 174,
+      weightKg: 63,
       nationality: 'Venezolana',
       residenceCountry: 'Venezuela',
       secondaryPassports: 'Español (UE)',
@@ -100,10 +102,131 @@ describe('ScoutDirectoryComponent', () => {
     expect(component.totalElements()).toBe(2);
   });
 
-  it('debe filtrar por chip de categoría', () => {
-    component.selectCategory(2011);
-    expect(component.selectedBirthYear()).toBe(2011);
-    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledTimes(2);
+  it('debe mostrar el buscador de texto en lugar de los chips superiores y conservar el badge de categoría en tarjetas (TS-81)', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelectorAll('.chip-button').length).toBe(0);
+    expect(compiled.querySelector('#directorySearchInput')).toBeTruthy();
+
+    const categoryBadges = compiled.querySelectorAll('.athlete-bento-card .category-chip');
+    expect(categoryBadges.length).toBe(2);
+    expect(categoryBadges[0].textContent).toContain('Sub-17');
+    expect(categoryBadges[1].textContent).toContain('Sub-20');
+  });
+
+  it('debe mostrar estatura y peso en tarjetas cuando están disponibles (TS-81)', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const cards = compiled.querySelectorAll('.athlete-bento-card');
+    const firstBio = cards[0].querySelector('.biometrics-tag');
+    const secondBio = cards[1].querySelector('.biometrics-tag');
+
+    expect(firstBio).toBeTruthy();
+    expect(firstBio?.textContent).toContain('174 cm');
+    expect(firstBio?.textContent).toContain('63 kg');
+    expect(secondBio).toBeNull();
+  });
+
+  it('debe filtrar por texto con debounce, soportar Enter y limpiar búsqueda (TS-81)', fakeAsync(() => {
+    directoryServiceSpy.getDirectory.calls.reset();
+
+    component.onSearchQueryChange('Alejandro');
+    expect(directoryServiceSpy.getDirectory).not.toHaveBeenCalled();
+
+    tick(350);
+    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
+      query: 'Alejandro',
+      page: 0
+    }));
+
+    directoryServiceSpy.getDirectory.calls.reset();
+    component.searchQuery.set('Caracas FC');
+    component.onSearchEnter();
+    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
+      query: 'Caracas FC',
+      page: 0
+    }));
+
+    directoryServiceSpy.getDirectory.calls.reset();
+    component.clearSearch();
+    expect(component.searchQuery()).toBe('');
+    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
+      query: null,
+      page: 0
+    }));
+  }));
+
+  it('debe filtrar por rango de años escribibles de 4 dígitos con debounce (TS-81)', fakeAsync(() => {
+    directoryServiceSpy.getDirectory.calls.reset();
+
+    component.onYearFromInputChange('20');
+    tick(350);
+    expect(directoryServiceSpy.getDirectory).not.toHaveBeenCalled();
+
+    component.onYearFromInputChange('2009');
+    component.onYearToInputChange('2011');
+    tick(350);
+
+    expect(component.selectedBirthYearFrom()).toBe(2009);
+    expect(component.selectedBirthYearTo()).toBe(2011);
+    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
+      birthYear: null,
+      birthYearFrom: 2009,
+      birthYearTo: 2011,
+      page: 0
+    }));
+  }));
+
+  it('debe filtrar por estatura y peso mínimo/máximo con debounce (TS-81)', fakeAsync(() => {
+    directoryServiceSpy.getDirectory.calls.reset();
+
+    component.onBiometricRangeChange('minHeightCm', 170);
+    component.onBiometricRangeChange('maxHeightCm', 185);
+    component.onBiometricRangeChange('minWeightKg', 60);
+    component.onBiometricRangeChange('maxWeightKg', 78);
+    tick(350);
+
+    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
+      minHeightCm: 170,
+      maxHeightCm: 185,
+      minWeightKg: 60,
+      maxWeightKg: 78,
+      page: 0
+    }));
+  }));
+
+  it('debe limpiar texto, años, estatura y peso al ejecutar resetFilters (TS-81)', () => {
+    component.searchQuery.set('Gómez');
+    component.birthYearFromInput.set('2008');
+    component.selectedBirthYearFrom.set(2008);
+    component.birthYearToInput.set('2010');
+    component.selectedBirthYearTo.set(2010);
+    component.minHeightCm.set(165);
+    component.maxHeightCm.set(190);
+    component.minWeightKg.set(55);
+    component.maxWeightKg.set(80);
+
+    component.resetFilters();
+
+    expect(component.searchQuery()).toBe('');
+    expect(component.birthYearFromInput()).toBe('');
+    expect(component.birthYearToInput()).toBe('');
+    expect(component.selectedBirthYearFrom()).toBeNull();
+    expect(component.selectedBirthYearTo()).toBeNull();
+    expect(component.minHeightCm()).toBeNull();
+    expect(component.maxHeightCm()).toBeNull();
+    expect(component.minWeightKg()).toBeNull();
+    expect(component.maxWeightKg()).toBeNull();
+    expect(component.hasActiveFilters()).toBeFalse();
+    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
+      query: null,
+      birthYear: null,
+      birthYearFrom: null,
+      birthYearTo: null,
+      minHeightCm: null,
+      maxHeightCm: null,
+      minWeightKg: null,
+      maxWeightKg: null,
+      page: 0
+    }));
   });
 
   it('debe filtrar por país de residencia y enviar el parámetro a directoryService (TS-45)', () => {
@@ -156,60 +279,6 @@ describe('ScoutDirectoryComponent', () => {
     const countryTag = compiled.querySelector('.country-tag');
     expect(countryTag).toBeTruthy();
     expect(countryTag?.textContent).toContain('Venezuela');
-  });
-
-  it('debe cargar los años de nacimiento disponibles en ngOnInit (TS-49)', () => {
-    expect(directoryServiceSpy.getAvailableBirthYears).toHaveBeenCalled();
-    expect(component.availableBirthYears()).toEqual([2012, 2011, 2010, 2009, 2008]);
-  });
-
-  it('debe filtrar por rango de años y deseleccionar categoría rápida (TS-49)', () => {
-    component.selectedBirthYear.set(2011);
-    component.onYearFromChange(2009);
-    component.onYearToChange(2011);
-
-    expect(component.selectedBirthYear()).toBeNull();
-    expect(component.selectedBirthYearFrom()).toBe(2009);
-    expect(component.selectedBirthYearTo()).toBe(2011);
-    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
-      birthYear: null,
-      birthYearFrom: 2009,
-      birthYearTo: 2011,
-      page: 0
-    }));
-  });
-
-  it('debe reiniciar los selectores de rango al seleccionar un chip de categoría (TS-49)', () => {
-    component.selectedBirthYearFrom.set(2009);
-    component.selectedBirthYearTo.set(2011);
-
-    component.selectCategory(2011);
-
-    expect(component.selectedBirthYear()).toBe(2011);
-    expect(component.selectedBirthYearFrom()).toBeNull();
-    expect(component.selectedBirthYearTo()).toBeNull();
-    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
-      birthYear: 2011,
-      birthYearFrom: null,
-      birthYearTo: null,
-      page: 0
-    }));
-  });
-
-  it('debe limpiar los selectores de rango de año al ejecutar resetFilters (TS-49)', () => {
-    component.selectedBirthYearFrom.set(2008);
-    component.selectedBirthYearTo.set(2010);
-    component.resetFilters();
-
-    expect(component.selectedBirthYearFrom()).toBeNull();
-    expect(component.selectedBirthYearTo()).toBeNull();
-    expect(component.selectedBirthYear()).toBeNull();
-    expect(directoryServiceSpy.getDirectory).toHaveBeenCalledWith(jasmine.objectContaining({
-      birthYear: null,
-      birthYearFrom: null,
-      birthYearTo: null,
-      page: 0
-    }));
   });
 
   it('debe renderizar el escudo del club cuando el atleta posee clubLogoUrl y no mostrar emoji (TS-74)', () => {

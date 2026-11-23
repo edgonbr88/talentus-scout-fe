@@ -8,6 +8,8 @@ export interface ScoutDirectoryAthleteItem {
   primaryPosition: string;
   secondaryPosition?: string;
   preferredFoot: string;
+  heightCm?: number | null;
+  weightKg?: number | null;
   nationality: string;
   secondaryPassports?: string;
   hasEuropeanPassport: boolean;
@@ -27,6 +29,7 @@ export interface ScoutDirectoryAthleteItem {
 }
 
 export interface ScoutDirectoryFilters {
+  query?: string | null;
   birthYear?: number | null;
   birthYearFrom?: number | null;
   birthYearTo?: number | null;
@@ -36,6 +39,10 @@ export interface ScoutDirectoryFilters {
   hasEuropeanPassport?: boolean | null;
   hasVideo?: boolean | null;
   residenceCountry?: string | null;
+  minHeightCm?: number | null;
+  maxHeightCm?: number | null;
+  minWeightKg?: number | null;
+  maxWeightKg?: number | null;
   page: number;
   size: number;
 }

@@ -20,6 +20,10 @@ export class ScoutDirectoryService {
       .set('page', filters.page.toString())
       .set('size', filters.size.toString());
 
+    const trimmedQuery = filters.query?.trim();
+    if (trimmedQuery) {
+      params = params.set('query', trimmedQuery);
+    }
     if (filters.birthYear !== undefined && filters.birthYear !== null) {
       params = params.set('birthYear', filters.birthYear.toString());
     }
@@ -46,6 +50,18 @@ export class ScoutDirectoryService {
     }
     if (filters.residenceCountry) {
       params = params.set('residenceCountry', filters.residenceCountry);
+    }
+    if (filters.minHeightCm !== undefined && filters.minHeightCm !== null) {
+      params = params.set('minHeightCm', filters.minHeightCm.toString());
+    }
+    if (filters.maxHeightCm !== undefined && filters.maxHeightCm !== null) {
+      params = params.set('maxHeightCm', filters.maxHeightCm.toString());
+    }
+    if (filters.minWeightKg !== undefined && filters.minWeightKg !== null) {
+      params = params.set('minWeightKg', filters.minWeightKg.toString());
+    }
+    if (filters.maxWeightKg !== undefined && filters.maxWeightKg !== null) {
+      params = params.set('maxWeightKg', filters.maxWeightKg.toString());
     }
 
     return this.http.get<PageResponse<ScoutDirectoryAthleteItem>>('/api/v1/scouts/directory', { params });
