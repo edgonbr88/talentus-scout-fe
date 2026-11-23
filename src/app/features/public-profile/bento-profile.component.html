@@ -298,6 +298,14 @@
         </section>
       </div>
 
+      @if (canViewTechnicalAnalyses()) {
+        <app-scout-technical-analyses
+          [athleteId]="a.id"
+          [athleteName]="a.fullName"
+          [isAdmin]="isAdmin()"
+        ></app-scout-technical-analyses>
+      }
+
       <!-- BARRA DE ACCIÓN FLOTANTE (COMPARTIR POR WHATSAPP) -->
       <aside class="floating-share-dock">
         <div class="share-dock-inner">

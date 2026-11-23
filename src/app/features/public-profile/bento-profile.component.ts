@@ -10,11 +10,20 @@ import { AchievementCategory, PublicAthleteResponse, PublicVideoDto } from '../.
 import { VideoPlayerComponent } from '../../shared/components/video-player/video-player.component';
 import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
 import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo.component';
+import { ScoutTechnicalAnalysesComponent } from './components/scout-technical-analyses/scout-technical-analyses.component';
 
 @Component({
   selector: 'app-bento-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule, VideoPlayerComponent, MediaUrlPipe, BrandLogoComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    ReactiveFormsModule,
+    VideoPlayerComponent,
+    MediaUrlPipe,
+    BrandLogoComponent,
+    ScoutTechnicalAnalysesComponent
+  ],
   templateUrl: './bento-profile.component.html',
   styleUrls: ['./bento-profile.component.css']
 })
@@ -61,6 +70,18 @@ export class BentoProfileComponent implements OnInit {
   public isScout = computed(() => {
     const role = this.authService.currentUser()?.role;
     return role === 'SCOUT' || role === 'ADMIN';
+  });
+
+  public isAdmin = computed(() => this.authService.currentUser()?.role === 'ADMIN');
+
+  public canViewTechnicalAnalyses = computed(() => {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+    const user = this.authService.currentUser();
+    if (!user) return false;
+    if (user.role === 'ADMIN') return true;
+    return user.role === 'SCOUT' && user.scoutVerificationStatus === 'APPROVED';
   });
 
   public canRegisterClubAchievement = computed(() => {
