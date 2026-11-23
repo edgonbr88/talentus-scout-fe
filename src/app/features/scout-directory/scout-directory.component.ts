@@ -1,18 +1,14 @@
-import { Component, OnInit, inject, signal, HostListener } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime, merge } from 'rxjs';
 import { ScoutDirectoryService } from '../../core/services/scout-directory.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { PageResponse, ScoutDirectoryAthleteItem, ScoutDirectoryFilters } from '../../core/models/scout-directory.model';
 import { VideoPlayerComponent } from '../../shared/components/video-player/video-player.component';
 import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
-
-export interface CategoryOption {
-  label: string;
-  birthYear: number | null;
-  description: string;
-}
 
 @Component({
   selector: 'app-scout-directory',
@@ -23,7 +19,12 @@ export interface CategoryOption {
 })
 export class ScoutDirectoryComponent implements OnInit {
   private directoryService = inject(ScoutDirectoryService);
+  private destroyRef = inject(DestroyRef);
   authService = inject(AuthService);
+
+  private searchInput$ = new Subject<string>();
+  private searchImmediate$ = new Subject<string>();
+  private numericFilter$ = new Subject<void>();
 
   // Estados Reactivos con Signals
   athletes = signal<ScoutDirectoryAthleteItem[]>([]);
@@ -48,23 +49,21 @@ export class ScoutDirectoryComponent implements OnInit {
   showAdvancedFilters = signal<boolean>(false);
 
   // Filtros seleccionados
+  searchQuery = signal<string>('');
   selectedBirthYear = signal<number | null>(null);
   selectedBirthYearFrom = signal<number | null>(null);
   selectedBirthYearTo = signal<number | null>(null);
-  availableBirthYears = signal<number[]>([]);
+  birthYearFromInput = signal<string>('');
+  birthYearToInput = signal<string>('');
   selectedPosition = signal<string>('');
   selectedFoot = signal<string>('');
   selectedResidenceCountry = signal<string>('');
+  minHeightCm = signal<number | null>(null);
+  maxHeightCm = signal<number | null>(null);
+  minWeightKg = signal<number | null>(null);
+  maxWeightKg = signal<number | null>(null);
   filterOnlyWithVideo = signal<boolean>(false);
   filterOnlyEuropeanPassport = signal<boolean>(false);
-
-  // Opciones de Categorías Rápidas por Chips
-  readonly categoryChips: CategoryOption[] = [
-    { label: 'Todos', birthYear: null, description: 'Radar general' },
-    { label: 'Sub-15', birthYear: 2011, description: 'Generación 2011-2012' },
-    { label: 'Sub-17', birthYear: 2009, description: 'Generación 2009-2010' },
-    { label: 'Sub-20', birthYear: 2007, description: 'Generación 2007-2008' }
-  ];
 
   // Opciones de Posiciones
   readonly positionOptions = [
@@ -100,34 +99,51 @@ export class ScoutDirectoryComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.loadAvailableBirthYears();
+    this.setupDebouncedFilters();
     this.fetchAthletes();
   }
 
-  loadAvailableBirthYears(): void {
-    this.directoryService.getAvailableBirthYears().subscribe({
-      next: (years) => {
-        this.availableBirthYears.set(years || []);
-      },
-      error: (err) => {
-        console.error('Error al cargar años de nacimiento disponibles:', err);
-      }
-    });
+  private setupDebouncedFilters(): void {
+    merge(
+      this.searchInput$.pipe(debounceTime(350)),
+      this.searchImmediate$
+    )
+      .pipe(
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.fetchAthletes(0);
+      });
+
+    this.numericFilter$
+      .pipe(
+        debounceTime(350),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(() => {
+        this.fetchAthletes(0);
+      });
   }
 
   fetchAthletes(page = 0): void {
     this.isLoading.set(true);
     this.hasError.set(false);
 
+    const trimmedQuery = this.searchQuery().trim();
     const filters: ScoutDirectoryFilters = {
       page,
       size: this.pageSize(),
+      query: trimmedQuery ? trimmedQuery : null,
       birthYear: this.selectedBirthYear(),
       birthYearFrom: this.selectedBirthYearFrom(),
       birthYearTo: this.selectedBirthYearTo(),
       primaryPosition: this.selectedPosition() ? this.selectedPosition() : null,
       preferredFoot: this.selectedFoot() ? this.selectedFoot() : null,
       residenceCountry: this.selectedResidenceCountry() ? this.selectedResidenceCountry() : null,
+      minHeightCm: this.minHeightCm(),
+      maxHeightCm: this.maxHeightCm(),
+      minWeightKg: this.minWeightKg(),
+      maxWeightKg: this.maxWeightKg(),
       hasVideo: this.filterOnlyWithVideo() ? true : null,
       hasEuropeanPassport: this.filterOnlyEuropeanPassport() ? true : null
     };
@@ -147,28 +163,82 @@ export class ScoutDirectoryComponent implements OnInit {
     });
   }
 
-  selectCategory(birthYear: number | null): void {
-    this.selectedBirthYear.set(birthYear);
-    this.selectedBirthYearFrom.set(null);
-    this.selectedBirthYearTo.set(null);
-    this.fetchAthletes(0);
+  onSearchQueryChange(value: string): void {
+    this.searchQuery.set(value);
+    this.searchInput$.next(value.trim());
   }
 
-  onYearFromChange(value: number | null): void {
-    this.selectedBirthYearFrom.set(value);
-    this.selectedBirthYear.set(null);
-    this.fetchAthletes(0);
+  onSearchEnter(): void {
+    this.searchImmediate$.next(this.searchQuery().trim());
   }
 
-  onYearToChange(value: number | null): void {
-    this.selectedBirthYearTo.set(value);
-    this.selectedBirthYear.set(null);
-    this.fetchAthletes(0);
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.searchImmediate$.next('');
   }
 
-  onYearRangeChange(): void {
+  onYearFromInputChange(value: string | number | null): void {
+    const raw = value === null || value === undefined ? '' : String(value).trim();
+    this.birthYearFromInput.set(raw);
     this.selectedBirthYear.set(null);
-    this.fetchAthletes(0);
+
+    if (!raw) {
+      if (this.selectedBirthYearFrom() !== null) {
+        this.selectedBirthYearFrom.set(null);
+        this.numericFilter$.next();
+      }
+      return;
+    }
+
+    if (/^\d{4}$/.test(raw)) {
+      const parsed = Number(raw);
+      if (parsed >= 1900 && parsed <= 2100) {
+        this.selectedBirthYearFrom.set(parsed);
+        this.numericFilter$.next();
+      }
+    }
+  }
+
+  onYearToInputChange(value: string | number | null): void {
+    const raw = value === null || value === undefined ? '' : String(value).trim();
+    this.birthYearToInput.set(raw);
+    this.selectedBirthYear.set(null);
+
+    if (!raw) {
+      if (this.selectedBirthYearTo() !== null) {
+        this.selectedBirthYearTo.set(null);
+        this.numericFilter$.next();
+      }
+      return;
+    }
+
+    if (/^\d{4}$/.test(raw)) {
+      const parsed = Number(raw);
+      if (parsed >= 1900 && parsed <= 2100) {
+        this.selectedBirthYearTo.set(parsed);
+        this.numericFilter$.next();
+      }
+    }
+  }
+
+  onBiometricRangeChange(
+    field: 'minHeightCm' | 'maxHeightCm' | 'minWeightKg' | 'maxWeightKg',
+    value: number | string | null
+  ): void {
+    const parsed = this.parsePositiveDecimal(value);
+    this[field].set(parsed);
+    this.numericFilter$.next();
+  }
+
+  private parsePositiveDecimal(value: number | string | null): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const num = typeof value === 'number' ? value : Number(String(value).trim());
+    if (Number.isNaN(num) || num <= 0) {
+      return null;
+    }
+    return num;
   }
 
   onFilterChange(): void {
@@ -189,13 +259,40 @@ export class ScoutDirectoryComponent implements OnInit {
     this.showAdvancedFilters.update((prev) => !prev);
   }
 
+  hasActiveFilters(): boolean {
+    return (
+      this.searchQuery().trim().length > 0 ||
+      this.selectedBirthYear() !== null ||
+      this.selectedBirthYearFrom() !== null ||
+      this.selectedBirthYearTo() !== null ||
+      this.birthYearFromInput().length > 0 ||
+      this.birthYearToInput().length > 0 ||
+      !!this.selectedPosition() ||
+      !!this.selectedFoot() ||
+      !!this.selectedResidenceCountry() ||
+      this.minHeightCm() !== null ||
+      this.maxHeightCm() !== null ||
+      this.minWeightKg() !== null ||
+      this.maxWeightKg() !== null ||
+      this.filterOnlyWithVideo() ||
+      this.filterOnlyEuropeanPassport()
+    );
+  }
+
   resetFilters(): void {
+    this.searchQuery.set('');
     this.selectedBirthYear.set(null);
     this.selectedBirthYearFrom.set(null);
     this.selectedBirthYearTo.set(null);
+    this.birthYearFromInput.set('');
+    this.birthYearToInput.set('');
     this.selectedPosition.set('');
     this.selectedFoot.set('');
     this.selectedResidenceCountry.set('');
+    this.minHeightCm.set(null);
+    this.maxHeightCm.set(null);
+    this.minWeightKg.set(null);
+    this.maxWeightKg.set(null);
     this.filterOnlyWithVideo.set(false);
     this.filterOnlyEuropeanPassport.set(false);
     this.fetchAthletes(0);

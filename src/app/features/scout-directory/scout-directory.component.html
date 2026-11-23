@@ -32,14 +32,30 @@
   </header>
 
   <div class="container directory-content">
-    <!-- Barra de Filtros Rápidos por Categoría (Chips) -->
-    <section class="chips-section" aria-label="Filtro rápido por categoría">
-      <div class="chips-container">
-        @for (chip of categoryChips; track chip.label) {
-        <button type="button" class="chip-button" [class.active]="selectedBirthYear() === chip.birthYear"
-          (click)="selectCategory(chip.birthYear)">
-          <span class="chip-label">{{ chip.label }}</span>
-          <span class="chip-desc">{{ chip.description }}</span>
+    <!-- Barra de Búsqueda por Texto y Acciones de Filtrado -->
+    <section class="chips-section" aria-label="Buscador de atletas y filtros">
+      <div class="search-box-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          id="directorySearchInput"
+          type="text"
+          class="search-input"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="onSearchQueryChange($event)"
+          (keydown.enter)="onSearchEnter()"
+          placeholder="Buscar por nombre, apellido o club..."
+          aria-label="Buscar atletas por nombre, apellido o club" />
+        @if (searchQuery()) {
+        <button
+          type="button"
+          class="btn-clear-search"
+          (click)="clearSearch()"
+          aria-label="Limpiar búsqueda">
+          ✕
         </button>
         }
       </div>
@@ -52,8 +68,7 @@
           <span class="chevron">{{ showAdvancedFilters() ? '▲' : '▼' }}</span>
         </button>
 
-        @if (selectedBirthYear() !== null || selectedBirthYearFrom() !== null || selectedBirthYearTo() !== null || selectedPosition() || selectedFoot() || filterOnlyWithVideo() ||
-        filterOnlyEuropeanPassport() || selectedResidenceCountry()) {
+        @if (hasActiveFilters()) {
         <button type="button" class="btn-reset" (click)="resetFilters()">
           Reiniciar filtros
         </button>
@@ -85,22 +100,82 @@
 
         <div class="filter-group">
           <label for="yearFromFilter" class="filter-label">Año Desde</label>
-          <select id="yearFromFilter" class="filter-select" [ngModel]="selectedBirthYearFrom()" (ngModelChange)="onYearFromChange($event)">
-            <option [ngValue]="null">Cualquier año</option>
-            @for (year of availableBirthYears(); track year) {
-            <option [ngValue]="year">{{ year }}</option>
-            }
-          </select>
+          <input
+            id="yearFromFilter"
+            type="number"
+            min="1900"
+            max="2100"
+            step="1"
+            class="filter-input"
+            placeholder="Ej. 2008"
+            [ngModel]="birthYearFromInput()"
+            (ngModelChange)="onYearFromInputChange($event)" />
         </div>
 
         <div class="filter-group">
           <label for="yearToFilter" class="filter-label">Año Hasta</label>
-          <select id="yearToFilter" class="filter-select" [ngModel]="selectedBirthYearTo()" (ngModelChange)="onYearToChange($event)">
-            <option [ngValue]="null">Cualquier año</option>
-            @for (year of availableBirthYears(); track year) {
-            <option [ngValue]="year">{{ year }}</option>
-            }
-          </select>
+          <input
+            id="yearToFilter"
+            type="number"
+            min="1900"
+            max="2100"
+            step="1"
+            class="filter-input"
+            placeholder="Ej. 2012"
+            [ngModel]="birthYearToInput()"
+            (ngModelChange)="onYearToInputChange($event)" />
+        </div>
+
+        <div class="filter-group">
+          <label for="minHeightFilter" class="filter-label">Estatura mín. (cm)</label>
+          <input
+            id="minHeightFilter"
+            type="number"
+            min="0"
+            step="0.5"
+            class="filter-input"
+            placeholder="Ej. 165"
+            [ngModel]="minHeightCm()"
+            (ngModelChange)="onBiometricRangeChange('minHeightCm', $event)" />
+        </div>
+
+        <div class="filter-group">
+          <label for="maxHeightFilter" class="filter-label">Estatura máx. (cm)</label>
+          <input
+            id="maxHeightFilter"
+            type="number"
+            min="0"
+            step="0.5"
+            class="filter-input"
+            placeholder="Ej. 190"
+            [ngModel]="maxHeightCm()"
+            (ngModelChange)="onBiometricRangeChange('maxHeightCm', $event)" />
+        </div>
+
+        <div class="filter-group">
+          <label for="minWeightFilter" class="filter-label">Peso mín. (kg)</label>
+          <input
+            id="minWeightFilter"
+            type="number"
+            min="0"
+            step="0.5"
+            class="filter-input"
+            placeholder="Ej. 55"
+            [ngModel]="minWeightKg()"
+            (ngModelChange)="onBiometricRangeChange('minWeightKg', $event)" />
+        </div>
+
+        <div class="filter-group">
+          <label for="maxWeightFilter" class="filter-label">Peso máx. (kg)</label>
+          <input
+            id="maxWeightFilter"
+            type="number"
+            min="0"
+            step="0.5"
+            class="filter-input"
+            placeholder="Ej. 85"
+            [ngModel]="maxWeightKg()"
+            (ngModelChange)="onBiometricRangeChange('maxWeightKg', $event)" />
         </div>
 
         <div class="filter-group">
@@ -230,6 +305,11 @@
           <span class="tag-badge country-tag" [title]="'País de residencia legal del atleta: ' + (athlete.residenceCountry || 'Venezuela')">
             📍 {{ athlete.residenceCountry || 'Venezuela' }}
           </span>
+          @if (athlete.heightCm != null || athlete.weightKg != null) {
+          <span class="tag-badge biometrics-tag" title="Estatura y peso registrados">
+            📏 @if (athlete.heightCm != null) { {{ athlete.heightCm | number:'1.0-1' }} cm }@if (athlete.heightCm != null && athlete.weightKg != null) { · }@if (athlete.weightKg != null) { {{ athlete.weightKg | number:'1.0-1' }} kg }
+          </span>
+          }
           @if (athlete.medicalCertifiedMetrics) {
           <span class="tag-badge medical-verified-tag" title="Estatura y peso certificados por facultativo de salud">
             🩺 Biometría Certificada
