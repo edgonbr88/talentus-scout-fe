@@ -14,6 +14,7 @@
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Inicio</a>
       @if (authService.canAccessAthleteDashboard()) {
         <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Mi Panel</a>
+        <a routerLink="/pagos" routerLinkActive="active" class="nav-link">Planes y Pagos</a>
       }
       @if (authService.canAccessDirectory()) {
         <a routerLink="/scout/directory" routerLinkActive="active" class="nav-link">Directorio Scouts</a>

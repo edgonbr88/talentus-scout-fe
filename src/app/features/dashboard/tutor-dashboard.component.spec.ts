@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { TutorDashboardComponent } from './tutor-dashboard.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { AthleteService } from '../../core/services/athlete.service';
@@ -173,10 +173,12 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
     expect(component.activeAthleteName).toBe(mockAthlete1.fullName);
   });
 
-  it('should redirect to checkout modal when selecting an athlete without active Pro subscription', () => {
+  it('should redirect to checkout page when selecting an athlete without active Pro subscription', () => {
     athleteServiceSpy.getMyAthletes.and.returnValue(of([mockAthlete1, mockAthlete2]));
     fixture = TestBed.createComponent(TutorDashboardComponent);
     component = fixture.componentInstance;
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate');
     fixture.detectChanges();
 
     component.openQuickVideoUploader();
@@ -186,21 +188,21 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
     component.selectAthleteForVideo(mockAthlete2);
     expect(component.showAthleteSelectorModal).toBeFalse();
     expect(component.showVideoModal).toBeFalse();
-    expect(component.showCheckoutModal).toBeTrue();
-    expect(component.selectedAthleteForCheckout).toBe(mockAthlete2);
+    expect(navSpy).toHaveBeenCalledWith(['/pagos', mockAthlete2.id]);
     expect(component.lastUploadedNotice).toContain('activa su membresía Pro');
   });
 
-  it('should redirect to checkout modal when handleVideoUploadAction is called on inactive athlete', () => {
+  it('should redirect to checkout page when handleVideoUploadAction is called on inactive athlete', () => {
     athleteServiceSpy.getMyAthletes.and.returnValue(of([mockAthlete2]));
     fixture = TestBed.createComponent(TutorDashboardComponent);
     component = fixture.componentInstance;
+    const router = TestBed.inject(Router);
+    const navSpy = spyOn(router, 'navigate');
     fixture.detectChanges();
 
     component.handleVideoUploadAction(mockAthlete2);
     expect(component.showVideoModal).toBeFalse();
-    expect(component.showCheckoutModal).toBeTrue();
-    expect(component.selectedAthleteForCheckout).toBe(mockAthlete2);
+    expect(navSpy).toHaveBeenCalledWith(['/pagos', mockAthlete2.id]);
   });
 
   it('should close the athlete selector modal when closeAthleteSelectorModal is invoked', () => {

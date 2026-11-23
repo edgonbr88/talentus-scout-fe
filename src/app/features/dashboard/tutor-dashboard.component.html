@@ -490,14 +490,6 @@
     (created)="onCertificationCreated()">
   </app-request-certification-modal>
 
-  <!-- MODAL DE CHECKOUT PAGO MÓVIL (PLAN PRO) -->
-  <app-checkout-pago-movil-modal
-    *ngIf="showCheckoutModal && selectedAthleteForCheckout"
-    [athlete]="selectedAthleteForCheckout"
-    (close)="closeCheckoutModal()"
-    (paymentReported)="onPaymentReported($event)">
-  </app-checkout-pago-movil-modal>
-
   <!-- MODAL DE DOCUMENTO DE IDENTIDAD DEL MENOR -->
   <div *ngIf="showIdentityModal && selectedAthleteForIdentity" class="modal-backdrop" (click)="closeIdentityModal()">
     <div class="modal-container identity-modal-box" (click)="$event.stopPropagation()">
