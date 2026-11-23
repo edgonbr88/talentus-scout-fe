@@ -5,6 +5,8 @@ import { environment } from '../../../environments/environment';
 import {
   BulkImportJobResponse,
   GoogleSheetImportRequest,
+  ScoutIndividualAthleteRequest,
+  ScoutIndividualAthleteResponse,
   TutorActivationRequest,
   TutorRejectionRequest
 } from '../models/bulk-import.model';
@@ -27,6 +29,10 @@ export class BulkImportService {
   importGoogleSheet(sheetUrlOrId: string): Observable<BulkImportJobResponse> {
     const payload: GoogleSheetImportRequest = { sheetUrlOrId };
     return this.http.post<BulkImportJobResponse>(`${this.apiUrl}/google-sheet`, payload);
+  }
+
+  registerIndividualAthlete(payload: ScoutIndividualAthleteRequest): Observable<ScoutIndividualAthleteResponse> {
+    return this.http.post<ScoutIndividualAthleteResponse>(`${this.apiUrl}/individual`, payload);
   }
 
   getJobStatus(jobId: string): Observable<BulkImportJobResponse> {

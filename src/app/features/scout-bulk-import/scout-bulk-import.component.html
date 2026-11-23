@@ -49,20 +49,29 @@
       <section class="bento-card-main" aria-label="Formulario de Carga Masiva">
         
         <!-- Pestañas de Navegación -->
-        <div class="tabs-nav">
-          <button type="button" class="tab-btn" [class.active]="activeTab === 'file'" (click)="setTab('file')">
+        <div class="tabs-nav" role="tablist" aria-label="Métodos de carga de atletas">
+          <button type="button" role="tab" [attr.aria-selected]="activeTab === 'file'" class="tab-btn" [class.active]="activeTab === 'file'" (click)="setTab('file')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 8 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
             </svg>
             <span>Archivo Local (.xlsx / .csv)</span>
           </button>
-          <button type="button" class="tab-btn" [class.active]="activeTab === 'google'" (click)="setTab('google')">
+          <button type="button" role="tab" [attr.aria-selected]="activeTab === 'google'" class="tab-btn" [class.active]="activeTab === 'google'" (click)="setTab('google')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/>
               <line x1="2" y1="12" x2="22" y2="12"/>
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
             </svg>
             <span>Google Sheets</span>
+          </button>
+          <button type="button" role="tab" [attr.aria-selected]="activeTab === 'individual'" class="tab-btn" [class.active]="activeTab === 'individual'" (click)="setTab('individual')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+            <span>Registro Individual</span>
           </button>
         </div>
 
@@ -157,6 +166,184 @@
                 <span>Sincronizar e Importar Planilla</span>
               }
             </button>
+          </div>
+        }
+
+        <!-- Pestaña 3: Registro Individual (TS-82) -->
+        @if (activeTab === 'individual') {
+          <div class="individual-tab-content">
+            <div class="club-readonly-banner">
+              <span class="club-banner-label">Club / Organización asignada</span>
+              <strong class="club-banner-value">{{ assignedClubName }}</strong>
+            </div>
+
+            @if (individualError) {
+              <div class="alert alert-danger" role="alert">
+                <span>{{ individualError }}</span>
+              </div>
+            }
+
+            @if (individualSuccess) {
+              <div class="individual-success-card" role="status">
+                <div class="success-card-header">
+                  <span class="success-badge">Registro completado</span>
+                  <span class="lopnna-status-pill">{{ individualSuccess.legalVerificationStatus }}</span>
+                </div>
+                <h3 class="success-athlete-title">{{ individualSuccess.athleteFullName }}</h3>
+                <p class="success-summary">
+                  Incorporado al radar de <strong>{{ individualSuccess.clubName }}</strong>. Se envió la invitación legal LOPNNA al tutor <strong>{{ individualSuccess.tutorEmail }}</strong>.
+                </p>
+                <div class="success-actions">
+                  <a [routerLink]="['/atleta', individualSuccess.slug]" class="btn btn-secondary">
+                    Ver ficha pública
+                  </a>
+                  <button type="button" class="btn btn-primary" (click)="resetIndividualForm()">
+                    Registrar otro atleta
+                  </button>
+                </div>
+              </div>
+            }
+
+            <form [formGroup]="individualForm" (ngSubmit)="submitIndividualAthlete()" class="individual-form" novalidate>
+              <fieldset class="form-section-fieldset">
+                <legend class="form-section-legend">1. Identidad y Biotipo del Atleta</legend>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="indPrimerNombre" class="form-label">Primer nombre *</label>
+                    <input id="indPrimerNombre" type="text" class="form-control" formControlName="primerNombre" placeholder="Ej. Juan" />
+                    @if (hasFieldError('primerNombre')) {
+                      <span class="field-error">El primer nombre es obligatorio.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indSegundoNombre" class="form-label">Segundo nombre</label>
+                    <input id="indSegundoNombre" type="text" class="form-control" formControlName="segundoNombre" placeholder="Ej. Carlos (opcional)" />
+                  </div>
+                  <div class="form-group">
+                    <label for="indPrimerApellido" class="form-label">Primer apellido *</label>
+                    <input id="indPrimerApellido" type="text" class="form-control" formControlName="primerApellido" placeholder="Ej. Pérez" />
+                    @if (hasFieldError('primerApellido')) {
+                      <span class="field-error">El primer apellido es obligatorio.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indSegundoApellido" class="form-label">Segundo apellido</label>
+                    <input id="indSegundoApellido" type="text" class="form-control" formControlName="segundoApellido" placeholder="Ej. Gómez (opcional)" />
+                  </div>
+                  <div class="form-group">
+                    <label for="indCedulaAtleta" class="form-label">Cédula / DNI del atleta</label>
+                    <input id="indCedulaAtleta" type="text" class="form-control" formControlName="cedulaIdentidadAtleta" placeholder="Ej. V-31234567 (opcional)" />
+                  </div>
+                  <div class="form-group">
+                    <label for="indFechaNacimiento" class="form-label">Fecha de nacimiento * (4–21 años)</label>
+                    <input id="indFechaNacimiento" type="date" class="form-control" formControlName="fechaNacimiento" />
+                    @if (hasFieldError('fechaNacimiento')) {
+                      <span class="field-error">La fecha de nacimiento es obligatoria.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indGenero" class="form-label">Género *</label>
+                    <select id="indGenero" class="form-control" formControlName="genero">
+                      @for (g of genderOptions; track g) {
+                        <option [value]="g">{{ g }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="indAlturaCm" class="form-label">Estatura (cm)</label>
+                    <input id="indAlturaCm" type="number" step="0.5" min="90" max="230" class="form-control" formControlName="alturaCm" placeholder="90 - 230 cm" />
+                    @if (hasFieldError('alturaCm')) {
+                      <span class="field-error">Ingresa una estatura válida entre 90 y 230 cm.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indPesoKg" class="form-label">Peso (kg)</label>
+                    <input id="indPesoKg" type="number" step="0.5" min="20" max="150" class="form-control" formControlName="pesoKg" placeholder="20 - 150 kg" />
+                    @if (hasFieldError('pesoKg')) {
+                      <span class="field-error">Ingresa un peso válido entre 20 y 150 kg.</span>
+                    }
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset class="form-section-fieldset">
+                <legend class="form-section-legend">2. Perfil Futbolístico</legend>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="indPosicionPrincipal" class="form-label">Posición principal *</label>
+                    <select id="indPosicionPrincipal" class="form-control" formControlName="posicionPrincipal">
+                      <option value="">Selecciona una posición</option>
+                      @for (pos of positionOptions; track pos) {
+                        <option [value]="pos">{{ pos }}</option>
+                      }
+                    </select>
+                    @if (hasFieldError('posicionPrincipal')) {
+                      <span class="field-error">Selecciona la posición principal.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indPosicionSecundaria" class="form-label">Posición secundaria</label>
+                    <select id="indPosicionSecundaria" class="form-control" formControlName="posicionSecundaria">
+                      <option value="">Ninguna (opcional)</option>
+                      @for (pos of positionOptions; track pos) {
+                        <option [value]="pos">{{ pos }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="indPieDominante" class="form-label">Pie dominante</label>
+                    <select id="indPieDominante" class="form-control" formControlName="pieDominante">
+                      @for (foot of footOptions; track foot) {
+                        <option [value]="foot">{{ foot }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="indNacionalidad" class="form-label">Nacionalidad</label>
+                    <select id="indNacionalidad" class="form-control" formControlName="nacionalidad">
+                      @for (country of countryOptions; track country) {
+                        <option [value]="country">{{ country }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset class="form-section-fieldset">
+                <legend class="form-section-legend">3. Datos del Tutor Legal (LOPNNA)</legend>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="indNombreTutor" class="form-label">Nombre completo del tutor *</label>
+                    <input id="indNombreTutor" type="text" class="form-control" formControlName="nombreCompletoTutor" placeholder="Ej. Carlos Pérez" />
+                    @if (hasFieldError('nombreCompletoTutor')) {
+                      <span class="field-error">El nombre del tutor es obligatorio.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indCedulaTutor" class="form-label">Cédula / DNI del tutor</label>
+                    <input id="indCedulaTutor" type="text" class="form-control" formControlName="cedulaIdentidadTutor" placeholder="Ej. V-14234567 (opcional)" />
+                  </div>
+                  <div class="form-group">
+                    <label for="indCorreoTutor" class="form-label">Correo electrónico del tutor *</label>
+                    <input id="indCorreoTutor" type="email" class="form-control" formControlName="correoTutor" placeholder="tutor@ejemplo.com" />
+                    @if (hasFieldError('correoTutor')) {
+                      <span class="field-error">Ingresa un correo electrónico válido para enviar la invitación.</span>
+                    }
+                  </div>
+                  <div class="form-group">
+                    <label for="indTelefonoTutor" class="form-label">Teléfono del tutor (E.164)</label>
+                    <input id="indTelefonoTutor" type="text" class="form-control" formControlName="telefonoTutor" placeholder="Ej. +584121234567 (opcional)" />
+                    @if (hasFieldError('telefonoTutor')) {
+                      <span class="field-error">Usa formato internacional E.164 (ej. +584121234567).</span>
+                    }
+                  </div>
+                </div>
+              </fieldset>
+
+              <button type="submit" class="btn btn-primary btn-process-action" [disabled]="isSubmittingIndividual">
+                <span>{{ isSubmittingIndividual ? 'Registrando atleta...' : 'Registrar Atleta y Notificar Tutor' }}</span>
+              </button>
+            </form>
           </div>
         }
 

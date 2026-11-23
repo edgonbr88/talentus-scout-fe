@@ -1,21 +1,30 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { BulkImportService } from '../../core/services/bulk-import.service';
-import { BulkImportJobResponse } from '../../core/models/bulk-import.model';
+import { AuthService } from '../../core/auth/auth.service';
+import {
+  BulkImportJobResponse,
+  ScoutIndividualAthleteRequest,
+  ScoutIndividualAthleteResponse
+} from '../../core/models/bulk-import.model';
 import { Subscription, interval } from 'rxjs';
 import { switchMap, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-scout-bulk-import',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
   templateUrl: './scout-bulk-import.component.html',
   styleUrls: ['./scout-bulk-import.component.css']
 })
 export class ScoutBulkImportComponent implements OnInit, OnDestroy {
-  activeTab: 'file' | 'google' = 'file';
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private authService = inject(AuthService);
+
+  activeTab: 'file' | 'google' | 'individual' = 'file';
   selectedFile: File | null = null;
   googleSheetUrl: string = '';
   isUploading: boolean = false;
@@ -25,11 +34,43 @@ export class ScoutBulkImportComponent implements OnInit, OnDestroy {
   showOmittedDetails: boolean = false;
   isDownloadingReport: boolean = false;
 
+  // Registro Individual (TS-82)
+  individualForm: FormGroup;
+  isSubmittingIndividual: boolean = false;
+  individualSuccess: ScoutIndividualAthleteResponse | null = null;
+  individualError: string | null = null;
+
+  readonly genderOptions = ['Masculino', 'Femenino'];
+  readonly positionOptions = [
+    'Portero',
+    'Defensa Central',
+    'Lateral Derecho',
+    'Lateral Izquierdo',
+    'Pivote Defensivo',
+    'Mediocampista Central',
+    'Mediocampista Ofensivo',
+    'Extremo Derecho',
+    'Extremo Izquierdo',
+    'Delantero Centro'
+  ];
+  readonly footOptions = ['Derecho', 'Izquierdo', 'Ambidiestro'];
+  readonly countryOptions = ['Venezuela', 'Colombia', 'Chile', 'Perú', 'Ecuador', 'Bolivia'];
+
   private pollSub: Subscription | null = null;
 
-  constructor(private bulkImportService: BulkImportService) {}
+  constructor(private bulkImportService: BulkImportService) {
+    this.individualForm = this.buildIndividualForm();
+  }
+
+  get assignedClubName(): string {
+    return this.authService.currentUser()?.organizationName || 'Asignado automáticamente desde tu perfil';
+  }
 
   ngOnInit(): void {
+    const initialTab = this.route.snapshot?.queryParamMap?.get('tab');
+    if (initialTab === 'individual' || initialTab === 'google' || initialTab === 'file') {
+      this.activeTab = initialTab;
+    }
     this.loadRecentJobs();
   }
 
@@ -37,9 +78,106 @@ export class ScoutBulkImportComponent implements OnInit, OnDestroy {
     this.stopPolling();
   }
 
-  setTab(tab: 'file' | 'google'): void {
+  setTab(tab: 'file' | 'google' | 'individual'): void {
     this.activeTab = tab;
     this.errorMessage = null;
+    this.individualError = null;
+  }
+
+  private buildIndividualForm(): FormGroup {
+    return this.fb.group({
+      primerNombre: ['', [Validators.required, Validators.maxLength(100)]],
+      segundoNombre: ['', [Validators.maxLength(100)]],
+      primerApellido: ['', [Validators.required, Validators.maxLength(100)]],
+      segundoApellido: ['', [Validators.maxLength(100)]],
+      cedulaIdentidadAtleta: ['', [Validators.maxLength(50)]],
+      fechaNacimiento: ['', [Validators.required]],
+      genero: ['Masculino', [Validators.required]],
+      alturaCm: [null, [Validators.min(90), Validators.max(230)]],
+      pesoKg: [null, [Validators.min(20), Validators.max(150)]],
+      posicionPrincipal: ['', [Validators.required]],
+      posicionSecundaria: [''],
+      pieDominante: ['Derecho', [Validators.required]],
+      nacionalidad: ['Venezuela', [Validators.required]],
+      nombreCompletoTutor: ['', [Validators.required, Validators.maxLength(150)]],
+      cedulaIdentidadTutor: ['', [Validators.maxLength(50)]],
+      correoTutor: ['', [Validators.required, Validators.email]],
+      telefonoTutor: ['', [Validators.pattern(/^$|^\+[1-9]\d{7,14}$/)]]
+    });
+  }
+
+  submitIndividualAthlete(): void {
+    this.individualError = null;
+    this.individualSuccess = null;
+
+    if (this.individualForm.invalid) {
+      this.individualForm.markAllAsTouched();
+      this.individualError = 'Revisa los campos obligatorios o corrige los formatos marcados antes de continuar.';
+      return;
+    }
+
+    const raw = this.individualForm.getRawValue();
+    const payload: ScoutIndividualAthleteRequest = {
+      primerNombre: raw.primerNombre.trim(),
+      segundoNombre: raw.segundoNombre?.trim() || null,
+      primerApellido: raw.primerApellido.trim(),
+      segundoApellido: raw.segundoApellido?.trim() || null,
+      cedulaIdentidadAtleta: raw.cedulaIdentidadAtleta?.trim() || null,
+      fechaNacimiento: raw.fechaNacimiento,
+      genero: raw.genero,
+      posicionPrincipal: raw.posicionPrincipal,
+      posicionSecundaria: raw.posicionSecundaria || null,
+      pieDominante: raw.pieDominante,
+      nacionalidad: raw.nacionalidad,
+      alturaCm: raw.alturaCm !== null && raw.alturaCm !== '' ? Number(raw.alturaCm) : null,
+      pesoKg: raw.pesoKg !== null && raw.pesoKg !== '' ? Number(raw.pesoKg) : null,
+      nombreCompletoTutor: raw.nombreCompletoTutor.trim(),
+      cedulaIdentidadTutor: raw.cedulaIdentidadTutor?.trim() || null,
+      correoTutor: raw.correoTutor.trim(),
+      telefonoTutor: raw.telefonoTutor?.trim() || null
+    };
+
+    this.isSubmittingIndividual = true;
+    this.bulkImportService.registerIndividualAthlete(payload).subscribe({
+      next: (res) => {
+        this.isSubmittingIndividual = false;
+        this.individualSuccess = res;
+        this.individualForm.reset({
+          genero: 'Masculino',
+          pieDominante: 'Derecho',
+          nacionalidad: 'Venezuela',
+          posicionPrincipal: '',
+          posicionSecundaria: ''
+        });
+      },
+      error: (err) => {
+        this.isSubmittingIndividual = false;
+        const fieldErrors = err.error?.errors;
+        if (fieldErrors && typeof fieldErrors === 'object') {
+          const firstMsg = Object.values(fieldErrors)[0];
+          this.individualError = (firstMsg as string) || err.error?.message || 'Error de validación en el formulario.';
+        } else {
+          this.individualError = err.error?.message || 'No se pudo registrar el atleta. Verifica los datos e intenta nuevamente.';
+        }
+      }
+    });
+  }
+
+  resetIndividualForm(): void {
+    this.individualSuccess = null;
+    this.individualError = null;
+    this.individualForm.reset({
+      genero: 'Masculino',
+      pieDominante: 'Derecho',
+      nacionalidad: 'Venezuela',
+      posicionPrincipal: '',
+      posicionSecundaria: ''
+    });
+  }
+
+  hasFieldError(controlName: string): boolean {
+    const control = this.individualForm.get(controlName);
+    return !!control && control.invalid && (control.touched || control.dirty);
   }
 
   onFileSelected(event: any): void {
