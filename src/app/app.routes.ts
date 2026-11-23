@@ -88,6 +88,18 @@ export const routes: Routes = [
     title: 'Panel del Tutor — Talentus Scout'
   },
   {
+    path: 'pagos',
+    loadComponent: () => import('./features/payments/checkout-page.component').then(m => m.CheckoutPageComponent),
+    canActivate: [authGuard, tutorGuard],
+    title: 'Planes y Pagos — Talentus Scout'
+  },
+  {
+    path: 'pagos/:athleteId',
+    loadComponent: () => import('./features/payments/checkout-page.component').then(m => m.CheckoutPageComponent),
+    canActivate: [authGuard, tutorGuard],
+    title: 'Planes y Pagos — Talentus Scout'
+  },
+  {
     path: 'admin/scouts',
     loadComponent: () => import('./features/admin/scouts/admin-scouts.component').then(m => m.AdminScoutsComponent),
     canActivate: [authGuard, adminGuard],

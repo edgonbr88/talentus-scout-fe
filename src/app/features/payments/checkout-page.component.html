@@ -1,0 +1,632 @@
+<div class="checkout-page-layout">
+  <header class="checkout-page-header">
+    <div class="container header-inner">
+      <div class="header-left">
+        <a routerLink="/dashboard" class="btn-back-panel">← Volver al Panel</a>
+        <h1 class="page-title">Planes y Pagos</h1>
+        <p class="page-subtitle">
+          Activa o renueva la visibilidad Pro de tus atletas en el directorio nacional de clubes y scouts verificados.
+        </p>
+      </div>
+
+      @if (!isLoading() && selectedAthlete(); as athlete) {
+        <div class="header-athlete-box">
+          @if (myAthletes().length > 1) {
+            <div class="athlete-selector-group">
+              <label for="checkoutAthleteSelect" class="selector-label">Atleta beneficiario</label>
+              <select
+                id="checkoutAthleteSelect"
+                class="athlete-select"
+                [ngModel]="athlete.id"
+                (ngModelChange)="onAthleteChange($event)"
+              >
+                @for (item of myAthletes(); track item.id) {
+                  <option [value]="item.id">
+                    {{ item.fullName }} ({{ item.subscriptionStatus === 'ACTIVE' ? 'Pro Activo' : 'Plan Inactivo' }})
+                  </option>
+                }
+              </select>
+            </div>
+          } @else {
+            <div class="athlete-single-pill">
+              <span class="selector-label">Atleta beneficiario</span>
+              <strong>{{ athlete.fullName }}</strong>
+            </div>
+          }
+
+          <span
+            class="sub-status-pill"
+            [class.status-active]="athlete.subscriptionStatus === 'ACTIVE'"
+          >
+            {{ athlete.subscriptionStatus === 'ACTIVE' ? 'Plan Pro Activo' : 'Suscripción Inactiva' }}
+          </span>
+        </div>
+      }
+    </div>
+  </header>
+
+  <main class="container checkout-main-container">
+    @if (isLoading()) {
+      <div class="checkout-loading-card">
+        <div class="spinner"></div>
+        <p>Cargando configuración de planes, pasarelas y tasa oficial BCV...</p>
+      </div>
+    } @else if (!selectedAthlete()) {
+      <div class="checkout-empty-card">
+        <h2>No tienes atletas registrados aún</h2>
+        <p>
+          Para contratar un Plan Pro primero debes registrar el perfil de tu atleta desde tu panel principal.
+        </p>
+        <a routerLink="/dashboard" class="btn btn-primary">Ir al Panel</a>
+      </div>
+    } @else if (completedTransaction()) {
+      @if (completedTransaction(); as tx) {
+      <section class="checkout-confirmation-card" role="status" aria-label="Confirmación de pago">
+        <div class="confirmation-header">
+          <span class="confirmation-badge">
+            {{ tx.status === 'APPROVED' ? 'Suscripción Activada' : 'Comprobante Registrado' }}
+          </span>
+          <span class="tx-status-pill" [class.tx-approved]="tx.status === 'APPROVED'">
+            {{ tx.status }}
+          </span>
+        </div>
+
+        <h2 class="confirmation-title">
+          {{ tx.status === 'APPROVED' ? '¡Plan Pro activado con éxito!' : '¡Pago reportado para conciliación!' }}
+        </h2>
+        <p class="confirmation-desc">
+          @if (tx.status === 'APPROVED') {
+            La membresía de <strong>{{ tx.athleteName }}</strong> ya se encuentra activa y visible en el radar de scouts.
+          } @else {
+            Hemos recibido tu referencia para <strong>{{ tx.athleteName }}</strong>. Administración verificará el comprobante y activará el Plan Pro a la brevedad.
+          }
+        </p>
+
+        <div class="confirmation-details-grid">
+          <div class="conf-detail">
+            <span class="conf-lbl">Atleta</span>
+            <strong>{{ tx.athleteName }}</strong>
+          </div>
+          <div class="conf-detail">
+            <span class="conf-lbl">Plan</span>
+            <strong>{{ tx.planName }}</strong>
+          </div>
+          <div class="conf-detail">
+            <span class="conf-lbl">Método</span>
+            <strong>{{ tx.method }}</strong>
+          </div>
+          <div class="conf-detail">
+            <span class="conf-lbl">Referencia</span>
+            <strong class="mono-ref">#{{ tx.referenceNumber }}</strong>
+          </div>
+          <div class="conf-detail">
+            <span class="conf-lbl">Monto</span>
+            <strong>
+              ${{ tx.amountUsd | number:'1.2-2' }} USD
+              @if (tx.amountVes && tx.amountVes > 0) {
+                <span>({{ tx.amountVes | number:'1.2-2' }} Bs.)</span>
+              }
+            </strong>
+          </div>
+          <div class="conf-detail">
+            <span class="conf-lbl">Fecha</span>
+            <strong>{{ tx.paymentDate }}</strong>
+          </div>
+        </div>
+
+        <div class="confirmation-actions">
+          <a routerLink="/dashboard" class="btn btn-primary">Volver al Panel</a>
+          <button type="button" class="btn btn-secondary" (click)="startAnotherPayment()">
+            Registrar otro pago
+          </button>
+        </div>
+      </section>
+      }
+    } @else {
+      <div class="checkout-grid">
+        <!-- COLUMNA IZQUIERDA: MÉTODOS, PLANES, CUPÓN Y FORMULARIO -->
+        <div class="checkout-left-col">
+          @if (copyFeedback()) {
+            <div class="copy-alert">✓ {{ copyFeedback() }}</div>
+          }
+          @if (errorMessage()) {
+            <div class="error-alert" role="alert">⚠ {{ errorMessage() }}</div>
+          }
+
+          @if (allGatewaysDisabled()) {
+            <div class="alert-maintenance-all">
+              ⚠️ Los canales de pago se encuentran en conciliación o mantenimiento temporal. Por favor, intenta de nuevo más tarde o contáctanos a soporte.
+            </div>
+          }
+
+          <!-- 1. SELECTOR DE PASARELA -->
+          @if (!isFreePromo) {
+            <section class="checkout-card">
+              <h2 class="card-section-title">1. Selecciona tu método de pago</h2>
+              <div class="method-selector-tabs">
+                @if (config()?.vexpayEnabled !== false) {
+                  <button
+                    type="button"
+                    class="tab-btn tab-vexpay"
+                    [class.tab-active]="selectedMethod() === 'VEXPAY'"
+                    (click)="setMethod('VEXPAY')"
+                  >
+                    <span class="tab-vexpay-badge">⚡</span>
+                    <div class="tab-text">
+                      <strong>VexPay <span class="tab-auto-pill">Automático</span></strong>
+                      <small>Pago Móvil · C2P · USDT · COP</small>
+                    </div>
+                  </button>
+                }
+
+                <button
+                  type="button"
+                  class="tab-btn"
+                  [class.tab-active]="selectedMethod() === 'PAGO_MOVIL'"
+                  [class.tab-disabled]="config()?.pagoMovilEnabled === false"
+                  [disabled]="config()?.pagoMovilEnabled === false"
+                  (click)="setMethod('PAGO_MOVIL')"
+                >
+                  <span class="tab-flag">🇻🇪</span>
+                  <div class="tab-text">
+                    <strong>Pago Móvil</strong>
+                    @if (config()?.pagoMovilEnabled !== false) {
+                      <small>Bolívares (Tasa BCV)</small>
+                    } @else {
+                      <small class="text-maintenance">En mantenimiento</small>
+                    }
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  class="tab-btn tab-binance"
+                  [class.tab-active]="selectedMethod() === 'BINANCE_PAY'"
+                  [class.tab-disabled]="config()?.binanceManualEnabled === false"
+                  [disabled]="config()?.binanceManualEnabled === false"
+                  (click)="setMethod('BINANCE_PAY')"
+                >
+                  <span class="tab-crypto-badge">🟡</span>
+                  <div class="tab-text">
+                    <strong>Binance Pay</strong>
+                    @if (config()?.binanceManualEnabled !== false) {
+                      <small>USDT Cripto · Billetera</small>
+                    } @else {
+                      <small class="text-maintenance">En mantenimiento</small>
+                    }
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  class="tab-btn tab-zelle"
+                  [class.tab-active]="selectedMethod() === 'ZELLE'"
+                  [class.tab-disabled]="config()?.zelleEnabled === false"
+                  [disabled]="config()?.zelleEnabled === false"
+                  (click)="setMethod('ZELLE')"
+                >
+                  <span class="tab-zelle-badge">🟣</span>
+                  <div class="tab-text">
+                    <strong>Zelle</strong>
+                    @if (config()?.zelleEnabled !== false) {
+                      <small>Transferencia USD</small>
+                    } @else {
+                      <small class="text-maintenance">En mantenimiento</small>
+                    }
+                  </div>
+                </button>
+              </div>
+            </section>
+          }
+
+          <!-- 2. SELECCIÓN DEL PLAN -->
+          <section class="checkout-card">
+            <h2 class="card-section-title">2. Selecciona la modalidad de tu Plan Pro</h2>
+            @if (config()?.plans; as plans) {
+              <div class="plans-grid">
+                @for (plan of plans; track plan.id) {
+                  <div
+                    class="plan-card"
+                    [class.plan-selected]="selectedPlan()?.id === plan.id"
+                    (click)="selectPlan(plan)"
+                    role="button"
+                    tabindex="0"
+                    (keydown.enter)="selectPlan(plan)"
+                  >
+                    <div class="plan-card-header">
+                      <span class="plan-name">{{ plan.name }}</span>
+                      @if (plan.id === 'PRO_ANNUAL') {
+                        <span class="plan-discount-tag">Ahorra 2 Meses</span>
+                      }
+                    </div>
+                    <div class="plan-price-row">
+                      <span class="price-usd">${{ plan.priceUsd }}</span>
+                      <span class="price-period">/ {{ plan.durationDays }} días</span>
+                    </div>
+                    <p class="plan-desc">
+                      {{ plan.id === 'PRO_ANNUAL' ? 'Cobertura continua para la temporada competitiva completa.' : 'Flexibilidad mensual para mostrar el talento del atleta.' }}
+                    </p>
+                  </div>
+                }
+              </div>
+            }
+          </section>
+
+          <!-- 3. CÓDIGO DE DESCUENTO / CONVENIO -->
+          <section class="checkout-card">
+            <h2 class="card-section-title">¿Tienes un código de descuento o convenio?</h2>
+
+            @if (!appliedCoupon()) {
+              <div class="coupon-input-group">
+                <input
+                  type="text"
+                  class="input-control coupon-input"
+                  placeholder="Ej: AFDC100, PROMO20, BECA-TALENTUS"
+                  [(ngModel)]="couponInput"
+                  (keyup.enter)="applyCoupon()"
+                  [disabled]="isValidatingCoupon()"
+                  maxlength="50"
+                />
+                <button
+                  type="button"
+                  class="btn-apply-coupon"
+                  (click)="applyCoupon()"
+                  [disabled]="isValidatingCoupon() || !couponInput.trim()"
+                >
+                  {{ isValidatingCoupon() ? 'Validando...' : 'Aplicar' }}
+                </button>
+              </div>
+            }
+
+            @if (couponError()) {
+              <div class="coupon-feedback error-feedback">⚠ {{ couponError() }}</div>
+            }
+            @if (couponSuccess()) {
+              <div class="coupon-feedback success-feedback">✓ {{ couponSuccess() }}</div>
+            }
+
+            @if (appliedCoupon(); as coupon) {
+              <div class="applied-coupon-card">
+                <div class="coupon-badge-group">
+                  <span class="coupon-code-badge">{{ coupon.code }}</span>
+                  @if (coupon.organizationName) {
+                    <span class="coupon-org-badge">🏛 {{ coupon.organizationName }}</span>
+                  }
+                  <span class="coupon-discount-badge" [class.badge-free]="coupon.isFreePromo">
+                    {{ coupon.isFreePromo ? '100% BONIFICADO' : (coupon.discountType === 'PERCENTAGE' ? coupon.discountValue + '% OFF' : '$' + coupon.discountValue + ' OFF') }}
+                  </span>
+                  <button type="button" class="btn-remove-coupon-link" (click)="removeCoupon()">
+                    ✕ Quitar
+                  </button>
+                </div>
+              </div>
+            }
+          </section>
+
+          <!-- 4. DETALLE Y FORMULARIO DEL MÉTODO SELECCIONADO -->
+          @if (isFreePromo) {
+            <section class="checkout-card free-promo-card">
+              <div class="free-promo-icon">🎁</div>
+              <div class="free-promo-content">
+                <h3>¡Convenio Institucional / Beca 100% Bonificada!</h3>
+                <p>
+                  El código <strong>{{ appliedCoupon()?.code }}</strong> cubre la totalidad de la membresía Pro para <strong>{{ selectedAthlete()?.fullName }}</strong>. No requieres comprobante bancario ni pasarela.
+                </p>
+              </div>
+            </section>
+          } @else if (selectedMethod() === 'VEXPAY') {
+            <section class="checkout-card vexpay-flow-section">
+              <div class="vexpay-benefit-banner">
+                <div class="vexpay-logo-title">
+                  <span class="vexpay-spark-badge">VEX</span>
+                  <h3>Checkout Seguro VexPay · Activación Automática</h3>
+                </div>
+                <p>
+                  Serás redirigido a la página segura de VexPay (<code>pay.vexpay.app</code>) para pagar al instante con
+                  <strong>Pago Móvil automático</strong>, <strong>Débito Inmediato (C2P)</strong>, <strong>USDT / USDC</strong> o <strong>Pesos Colombianos (COP)</strong>.
+                </p>
+              </div>
+
+              <div class="vexpay-quote-card">
+                <div class="vexpay-quote-header">
+                  <span class="quote-heading">Cotización Oficial VexPay</span>
+                  <button type="button" class="btn-refresh-quote" (click)="loadVexPayQuote()" [disabled]="isLoadingVexPayQuote()">
+                    {{ isLoadingVexPayQuote() ? 'Cotizando...' : '↻ Actualizar Tasa' }}
+                  </button>
+                </div>
+
+                @if (isLoadingVexPayQuote()) {
+                  <div class="vexpay-quote-loading">Consultando tasa oficial en VexPay...</div>
+                } @else if (vexPayQuoteError()) {
+                  <div class="vexpay-quote-error">⚠ {{ vexPayQuoteError() }}</div>
+                } @else if (vexPayQuote()) {
+                  @if (vexPayQuote(); as quote) {
+                  <div class="vexpay-quote-grid">
+                    <div class="quote-metric">
+                      <span class="quote-lbl">Monto en USD</span>
+                      <strong class="quote-usd">${{ quote.usdAmount | number:'1.2-2' }} USD</strong>
+                    </div>
+                    <div class="quote-metric">
+                      <span class="quote-lbl">Tasa Aplicada ({{ quote.rateSource === 'MARKET' ? 'Mercado' : 'BCV Oficial' }})</span>
+                      <strong class="quote-rate">{{ quote.rate | number:'1.2-4' }} Bs./$</strong>
+                    </div>
+                    <div class="quote-metric quote-metric-highlight">
+                      <span class="quote-lbl">Total Estimado en Bolívares</span>
+                      <strong class="quote-ves">{{ quote.vesAmount | number:'1.2-2' }} Bs.</strong>
+                    </div>
+                  </div>
+                  }
+                }
+              </div>
+            </section>
+          } @else if (selectedMethod() === 'PAGO_MOVIL') {
+            <section class="checkout-card">
+              <h2 class="card-section-title">3. Realiza tu Pago Móvil a estos datos</h2>
+              @if (config(); as cfg) {
+                <div class="bank-details-box">
+                  <div class="detail-row">
+                    <div class="detail-label-val">
+                      <span class="lbl">Banco Destino:</span>
+                      <strong class="val">{{ cfg.recipientBank }}</strong>
+                    </div>
+                    <button (click)="copyToClipboard(cfg.recipientBank, 'Banco')" class="btn-copy" type="button">Copiar</button>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label-val">
+                      <span class="lbl">Teléfono Destino:</span>
+                      <strong class="val">{{ cfg.recipientPhone }}</strong>
+                    </div>
+                    <button (click)="copyToClipboard(cfg.recipientPhone, 'Teléfono')" class="btn-copy" type="button">Copiar</button>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label-val">
+                      <span class="lbl">C.I. / RIF:</span>
+                      <strong class="val">{{ cfg.recipientIdDocument }}</strong>
+                    </div>
+                    <button (click)="copyToClipboard(cfg.recipientIdDocument, 'Documento')" class="btn-copy" type="button">Copiar</button>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label-val">
+                      <span class="lbl">Titular:</span>
+                      <strong class="val">{{ cfg.recipientAccountHolder }}</strong>
+                    </div>
+                    <button (click)="copyToClipboard(cfg.recipientAccountHolder, 'Titular')" class="btn-copy" type="button">Copiar</button>
+                  </div>
+                  <div class="detail-row highlight-amount-row">
+                    <div class="detail-label-val">
+                      <span class="lbl">Monto Exacto:</span>
+                      <strong class="val amount-strong">{{ calculatedAmountVes | number:'1.2-2' }} Bs.</strong>
+                    </div>
+                    <button (click)="copyToClipboard(calculatedAmountVes.toString(), 'Monto en Bs.')" class="btn-copy btn-copy-highlight" type="button">Copiar Monto</button>
+                  </div>
+                </div>
+              }
+
+              <h3 class="form-sub-title">Registra los datos de tu comprobante</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="referenceNumber" class="input-label">Número de Referencia Bancaria *</label>
+                  <input id="referenceNumber" type="text" class="input-control" placeholder="Ej: 849201 ó 00481923" [(ngModel)]="referenceNumber" maxlength="30" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="paymentDate" class="input-label">Fecha de la Transacción *</label>
+                  <input id="paymentDate" type="date" class="input-control" [(ngModel)]="paymentDate" />
+                </div>
+                <div class="form-group">
+                  <label for="originBank" class="input-label">Banco Emisor</label>
+                  <select id="originBank" class="input-control" [(ngModel)]="originBank">
+                    @for (bank of popularBanks; track bank) {
+                      <option [value]="bank">{{ bank }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="originPhone" class="input-label">Teléfono Emisor (Opcional)</label>
+                  <input id="originPhone" type="tel" class="input-control" placeholder="Ej: 04121234567" [(ngModel)]="originPhone" maxlength="20" />
+                </div>
+              </div>
+            </section>
+          } @else if (selectedMethod() === 'BINANCE_PAY') {
+            <section class="checkout-card">
+              <h2 class="card-section-title">3. Transferencia Cripto USDT (Binance Pay)</h2>
+              <div class="binance-credentials-grid">
+                @if (config()?.binanceQrImageUrl) {
+                  <div class="binance-qr-col">
+                    <div class="binance-qr-box">
+                      <img [src]="config()?.binanceQrImageUrl" alt="Código QR Binance Pay Talentus Scout" class="binance-qr-img" />
+                    </div>
+                    <span class="qr-caption">Escanea con la app de Binance</span>
+                  </div>
+                }
+                <div class="binance-data-col">
+                  <div class="credential-row">
+                    <span class="credential-label">Binance Pay ID:</span>
+                    <div class="credential-value-wrap">
+                      <span class="credential-code">{{ config()?.binancePayId || '283918273' }}</span>
+                      <button type="button" class="btn-copy-mini" (click)="copyToClipboard(config()?.binancePayId || '283918273', 'Binance Pay ID')">Copiar</button>
+                    </div>
+                  </div>
+                  <div class="credential-row">
+                    <span class="credential-label">Dirección de Billetera (USDT):</span>
+                    <div class="credential-value-wrap">
+                      <span class="credential-code wallet-code">{{ config()?.binanceWalletAddress || 'TLsV5289FjK93kdJ8193jd93kd9' }}</span>
+                      <button type="button" class="btn-copy-mini" (click)="copyToClipboard(config()?.binanceWalletAddress || 'TLsV5289FjK93kdJ8193jd93kd9', 'Dirección de Wallet')">Copiar</button>
+                    </div>
+                  </div>
+                  <div class="network-badge-box">
+                    <span>🛡️ Red Obligatoria: <strong>{{ config()?.binanceNetwork || 'USDT (TRC-20 / BEP-20)' }}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="form-sub-title">Registra los datos de tu transferencia</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="binanceRefInput" class="input-label">Número de Referencia / TxID *</label>
+                  <input id="binanceRefInput" type="text" class="input-control" [(ngModel)]="binanceReference" placeholder="Ej: 2849182948 o TxID" maxlength="100" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="binanceDateInput" class="input-label">Fecha de la Transferencia *</label>
+                  <input id="binanceDateInput" type="date" class="input-control" [(ngModel)]="binancePaymentDate" />
+                </div>
+                <div class="form-group">
+                  <label for="binanceOriginInput" class="input-label">Usuario Binance o Wallet (Opcional)</label>
+                  <input id="binanceOriginInput" type="text" class="input-control" [(ngModel)]="binanceOriginAccount" placeholder="Ej: @tu_usuario" maxlength="80" />
+                </div>
+              </div>
+            </section>
+          } @else if (selectedMethod() === 'ZELLE') {
+            <section class="checkout-card">
+              <h2 class="card-section-title">3. Transferencia Directa con Zelle (USD)</h2>
+              <div class="zelle-credentials-grid">
+                @if (config()?.zelleQrImageUrl) {
+                  <div class="zelle-qr-col">
+                    <img [src]="config()?.zelleQrImageUrl" alt="Código QR Zelle Talentus Scout" class="zelle-qr-img" />
+                  </div>
+                }
+                <div class="zelle-data-col">
+                  <div class="credential-row">
+                    <span class="credential-label">Correo Receptor Zelle:</span>
+                    <div class="credential-value-wrap">
+                      <span class="credential-code">{{ config()?.zelleEmail || 'pagos@talentusscout.com' }}</span>
+                      <button type="button" class="btn-copy-mini" (click)="copyToClipboard(config()?.zelleEmail || 'pagos@talentusscout.com', 'Correo Zelle')">Copiar</button>
+                    </div>
+                  </div>
+                  <div class="credential-row">
+                    <span class="credential-label">Titular Oficial:</span>
+                    <div class="credential-value-wrap">
+                      <span class="credential-code">{{ config()?.zelleAccountHolder || 'Talentus Scout LLC' }}</span>
+                      <button type="button" class="btn-copy-mini" (click)="copyToClipboard(config()?.zelleAccountHolder || 'Talentus Scout LLC', 'Titular Zelle')">Copiar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="form-sub-title">Registra los datos de tu transferencia Zelle</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="zelleHolderInput" class="input-label">Titular de la Cuenta Emisora *</label>
+                  <input id="zelleHolderInput" type="text" class="input-control" [(ngModel)]="zelleOriginAccountHolder" placeholder="Ej: Roberto Carlos Rivas" maxlength="100" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="zelleEmailOrPhoneInput" class="input-label">Correo o Teléfono Emisor (Opcional)</label>
+                  <input id="zelleEmailOrPhoneInput" type="text" class="input-control" [(ngModel)]="zelleOriginEmailOrPhone" placeholder="Ej: tu.correo@gmail.com" maxlength="150" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="zelleRefInput" class="input-label">Número de Confirmación / Referencia *</label>
+                  <input id="zelleRefInput" type="text" class="input-control" [(ngModel)]="zelleReference" placeholder="Ej: JPM992837465" maxlength="100" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label for="zelleDateInput" class="input-label">Fecha de la Transferencia *</label>
+                  <input id="zelleDateInput" type="date" class="input-control" [(ngModel)]="zellePaymentDate" />
+                </div>
+              </div>
+            </section>
+          }
+        </div>
+
+        <!-- COLUMNA DERECHA: RESUMEN STICKY DE LA ORDEN -->
+        <aside class="checkout-summary-col" aria-label="Resumen de la orden">
+          <div class="summary-card">
+            <h2 class="summary-title">Resumen de la Orden</h2>
+
+            <div class="summary-rows">
+              <div class="summary-row">
+                <span class="sum-lbl">Atleta</span>
+                <strong class="sum-val">{{ selectedAthlete()?.fullName }}</strong>
+              </div>
+              <div class="summary-row">
+                <span class="sum-lbl">Plan seleccionado</span>
+                <strong class="sum-val">{{ selectedPlan()?.name || '—' }}</strong>
+              </div>
+              <div class="summary-row">
+                <span class="sum-lbl">Método</span>
+                <strong class="sum-val">{{ isFreePromo ? 'Beca / Convenio 100%' : selectedMethod() }}</strong>
+              </div>
+              <div class="summary-row">
+                <span class="sum-lbl">Subtotal USD</span>
+                <strong class="sum-val">${{ (selectedPlan()?.priceUsd || 0) | number:'1.2-2' }} USD</strong>
+              </div>
+
+              @if (discountAmountUsd > 0) {
+                <div class="summary-row discount-row">
+                  <span class="sum-lbl">Descuento aplicado</span>
+                  <strong class="sum-val">-${{ discountAmountUsd | number:'1.2-2' }} USD</strong>
+                </div>
+              }
+
+              @if (selectedMethod() === 'PAGO_MOVIL' && !isFreePromo && bcvRate()?.officialRate) {
+                <div class="summary-row">
+                  <span class="sum-lbl">Tasa BCV del día</span>
+                  <strong class="sum-val">{{ bcvRate()?.officialRate | number:'1.2-4' }} Bs./$</strong>
+                </div>
+                <div class="summary-row ves-total-row">
+                  <span class="sum-lbl">Total en Bolívares</span>
+                  <strong class="sum-val">{{ calculatedAmountVes | number:'1.2-2' }} Bs.</strong>
+                </div>
+              }
+            </div>
+
+            <div class="summary-total-box">
+              <span class="total-lbl">Total Final</span>
+              <strong class="total-usd">
+                {{ isFreePromo ? '$0.00 USD (Bonificado)' : ('$' + (effectiveAmountUsd | number:'1.2-2') + ' USD') }}
+              </strong>
+            </div>
+
+            <div class="summary-cta-box">
+              @if (isFreePromo) {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-checkout-cta btn-activate-free"
+                  [disabled]="isSubmitting()"
+                  (click)="redeemFreeSubscription()"
+                >
+                  {{ isSubmitting() ? 'Activando...' : '⚡ Activar Suscripción 100% Bonificada' }}
+                </button>
+              } @else if (allGatewaysDisabled()) {
+                <div class="maintenance-cta-note">Pasarelas temporalmente en mantenimiento</div>
+              } @else if (selectedMethod() === 'VEXPAY') {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-checkout-cta"
+                  [disabled]="isCreatingVexPaySession() || !selectedPlan()"
+                  (click)="startVexPayCheckout()"
+                >
+                  {{ isCreatingVexPaySession() ? 'Preparando sesión segura...' : 'Ir a Pagar con VexPay' }}
+                </button>
+              } @else if (selectedMethod() === 'PAGO_MOVIL') {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-checkout-cta"
+                  [disabled]="isSubmitting() || !referenceNumber"
+                  (click)="submitReport()"
+                >
+                  {{ isSubmitting() ? 'Verificando con el banco...' : 'Confirmar y Notificar Pago' }}
+                </button>
+              } @else if (selectedMethod() === 'BINANCE_PAY') {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-checkout-cta"
+                  [disabled]="isSubmittingBinance() || !binanceReference"
+                  (click)="submitBinanceReport()"
+                >
+                  {{ isSubmittingBinance() ? 'Registrando transferencia...' : 'Confirmar y Notificar Pago Binance' }}
+                </button>
+              } @else if (selectedMethod() === 'ZELLE') {
+                <button
+                  type="button"
+                  class="btn btn-primary btn-checkout-cta"
+                  [disabled]="isSubmittingZelle() || !zelleReference || !zelleOriginAccountHolder"
+                  (click)="submitZelleReport()"
+                >
+                  {{ isSubmittingZelle() ? 'Registrando transferencia...' : 'Confirmar y Notificar Pago Zelle' }}
+                </button>
+              }
+            </div>
+          </div>
+        </aside>
+      </div>
+    }
+  </main>
+</div>

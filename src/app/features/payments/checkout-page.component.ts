@@ -1,7 +1,10 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { catchError, forkJoin, of } from 'rxjs';
 import { PaymentService } from '../../core/services/payment.service';
+import { AthleteService } from '../../core/services/athlete.service';
 import { AthleteSummary } from '../../core/models/athlete.model';
 import {
   BcvRateResponse,
@@ -14,18 +17,20 @@ import {
 } from '../../core/models/payment.model';
 
 @Component({
-  selector: 'app-checkout-pago-movil-modal',
+  selector: 'app-checkout-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe],
-  templateUrl: './checkout-pago-movil-modal.component.html',
-  styleUrls: ['./checkout-pago-movil-modal.component.css']
+  imports: [CommonModule, FormsModule, DecimalPipe, RouterLink],
+  templateUrl: './checkout-page.component.html',
+  styleUrls: ['./checkout-page.component.css']
 })
-export class CheckoutPagoMovilModalComponent implements OnInit {
+export class CheckoutPageComponent implements OnInit {
   private paymentService = inject(PaymentService);
+  private athleteService = inject(AthleteService);
+  private route = inject(ActivatedRoute);
 
-  @Input({ required: true }) athlete!: AthleteSummary;
-  @Output() close = new EventEmitter<void>();
-  @Output() paymentReported = new EventEmitter<PaymentTransactionResponse>();
+  // Atletas del tutor/atleta
+  readonly myAthletes = signal<AthleteSummary[]>([]);
+  readonly selectedAthlete = signal<AthleteSummary | null>(null);
 
   // Método de pago seleccionado
   readonly selectedMethod = signal<'PAGO_MOVIL' | 'BINANCE_PAY' | 'ZELLE' | 'VEXPAY'>('PAGO_MOVIL');
@@ -40,6 +45,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   readonly isSubmitting = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
   readonly copyFeedback = signal<string | null>(null);
+  readonly completedTransaction = signal<PaymentTransactionResponse | null>(null);
 
   // Estados de Binance Pay
   readonly binanceOrder = signal<CreateBinanceOrderResponse | null>(null);
@@ -65,18 +71,27 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   binanceOriginAccount = '';
   readonly isSubmittingBinance = signal<boolean>(false);
 
-  // Estados de Zelle Manual (TS-66)
+  // Estados de Zelle Manual
   zelleReference = '';
   zellePaymentDate = new Date().toISOString().substring(0, 10);
   zelleOriginAccountHolder = '';
   zelleOriginEmailOrPhone = '';
   readonly isSubmittingZelle = signal<boolean>(false);
 
-  // Estados de VexPay Automatizado (TS-78)
+  // Estados de VexPay Automatizado
   readonly vexPayQuote = signal<VexPayQuoteResponse | null>(null);
   readonly isLoadingVexPayQuote = signal<boolean>(false);
   readonly vexPayQuoteError = signal<string | null>(null);
   readonly isCreatingVexPaySession = signal<boolean>(false);
+
+  readonly allGatewaysDisabled = computed(() => {
+    const cfg = this.config();
+    if (!cfg) return false;
+    return cfg.pagoMovilEnabled === false
+      && cfg.binanceManualEnabled === false
+      && cfg.zelleEnabled === false
+      && cfg.vexpayEnabled === false;
+  });
 
   readonly popularBanks = [
     'Banco de Venezuela',
@@ -90,64 +105,84 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.loadPaymentData();
+    this.loadCheckoutData();
   }
 
-  loadPaymentData(): void {
+  loadCheckoutData(): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.paymentService.getPaymentConfig().subscribe({
-      next: (cfg) => {
-        this.config.set(cfg);
-        if (cfg.plans && cfg.plans.length > 0) {
-          const defaultPlan = cfg.plans.find(p => p.id === 'PRO_MONTHLY') || cfg.plans[0];
+    const routeAthleteId = this.route.snapshot?.paramMap?.get('athleteId');
+
+    forkJoin({
+      athletes: this.athleteService.getMyAthletes(),
+      config: this.paymentService.getPaymentConfig(),
+      bcvRate: this.paymentService.getBcvRate().pipe(catchError(() => of(null)))
+    }).subscribe({
+      next: ({ athletes, config, bcvRate }) => {
+        const list = athletes || [];
+        this.myAthletes.set(list);
+        this.config.set(config);
+        this.bcvRate.set(bcvRate);
+
+        if (list.length > 0) {
+          const matched = routeAthleteId ? list.find(a => a.id === routeAthleteId) : undefined;
+          const fallback = list.find(a => a.subscriptionStatus !== 'ACTIVE') || list[0];
+          this.selectedAthlete.set(matched || fallback);
+        } else {
+          this.selectedAthlete.set(null);
+        }
+
+        if (config.plans && config.plans.length > 0) {
+          const defaultPlan = config.plans.find(p => p.id === 'PRO_MONTHLY') || config.plans[0];
           this.selectedPlan.set(defaultPlan);
         }
-        if (cfg.pagoMovilEnabled !== false) {
+
+        if (config.pagoMovilEnabled !== false) {
           this.selectedMethod.set('PAGO_MOVIL');
-        } else if (cfg.vexpayEnabled !== false) {
+        } else if (config.vexpayEnabled !== false) {
           this.selectedMethod.set('VEXPAY');
-          this.loadVexPayQuote();
-        } else if (cfg.binanceManualEnabled !== false) {
+          if (this.selectedAthlete()) {
+            this.loadVexPayQuote();
+          }
+        } else if (config.binanceManualEnabled !== false) {
           this.selectedMethod.set('BINANCE_PAY');
-        } else if (cfg.zelleEnabled !== false) {
+        } else if (config.zelleEnabled !== false) {
           this.selectedMethod.set('ZELLE');
         }
-        this.fetchBcvRate();
+
+        this.isLoading.set(false);
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set('No se pudo cargar la configuración de pago: ' + (err.error?.message || err.message));
+        this.errorMessage.set('No se pudo cargar la información de pagos: ' + (err.error?.message || err.message));
       }
     });
   }
 
-  fetchBcvRate(): void {
-    this.paymentService.getBcvRate().subscribe({
-      next: (rate) => {
-        this.bcvRate.set(rate);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.isLoading.set(false);
-      }
-    });
+  onAthleteChange(athleteId: string): void {
+    const found = this.myAthletes().find(a => a.id === athleteId) || null;
+    if (!found) return;
+
+    this.selectedAthlete.set(found);
+    this.completedTransaction.set(null);
+    this.errorMessage.set(null);
+    this.binanceOrder.set(null);
+    this.binanceNotice.set(null);
+
+    if (this.appliedCoupon()) {
+      this.applyCoupon();
+    } else if (this.selectedMethod() === 'VEXPAY') {
+      this.loadVexPayQuote();
+    }
   }
 
   setMethod(method: 'PAGO_MOVIL' | 'BINANCE_PAY' | 'ZELLE' | 'VEXPAY'): void {
-    if (method === 'PAGO_MOVIL' && this.config()?.pagoMovilEnabled === false) {
-      return;
-    }
-    if (method === 'BINANCE_PAY' && this.config()?.binanceManualEnabled === false) {
-      return;
-    }
-    if (method === 'ZELLE' && this.config()?.zelleEnabled === false) {
-      return;
-    }
-    if (method === 'VEXPAY' && this.config()?.vexpayEnabled === false) {
-      return;
-    }
+    if (method === 'PAGO_MOVIL' && this.config()?.pagoMovilEnabled === false) return;
+    if (method === 'BINANCE_PAY' && this.config()?.binanceManualEnabled === false) return;
+    if (method === 'ZELLE' && this.config()?.zelleEnabled === false) return;
+    if (method === 'VEXPAY' && this.config()?.vexpayEnabled === false) return;
+
     this.selectedMethod.set(method);
     this.errorMessage.set(null);
     this.binanceNotice.set(null);
@@ -158,11 +193,9 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
 
   selectPlan(plan: SubscriptionPlanDto): void {
     this.selectedPlan.set(plan);
-    // Si cambia de plan y había una orden Binance generada, se resetea
     if (this.binanceOrder()) {
       this.binanceOrder.set(null);
     }
-    // Revalidar cupón si ya había uno ingresado
     if (this.appliedCoupon()) {
       this.applyCoupon();
     } else if (this.selectedMethod() === 'VEXPAY') {
@@ -201,8 +234,9 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   }
 
   applyCoupon(): void {
+    const athlete = this.selectedAthlete();
     const code = this.couponInput.trim();
-    if (!code) return;
+    if (!code || !athlete) return;
 
     const plan = this.selectedPlan();
     if (!plan) {
@@ -215,8 +249,8 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.couponSuccess.set(null);
 
     this.paymentService.validateCoupon({
-      code: code,
-      athleteId: this.athlete.id,
+      code,
+      athleteId: athlete.id,
       planId: plan.id
     }).subscribe({
       next: (res) => {
@@ -260,22 +294,22 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   }
 
   redeemFreeSubscription(): void {
+    const athlete = this.selectedAthlete();
     const coupon = this.appliedCoupon();
     const plan = this.selectedPlan();
-    if (!coupon || !coupon.isFreePromo || !plan) return;
+    if (!athlete || !coupon || !coupon.isFreePromo || !plan) return;
 
     this.isSubmitting.set(true);
     this.errorMessage.set(null);
 
     this.paymentService.redeemFreePromo({
       code: coupon.code!,
-      athleteId: this.athlete.id,
+      athleteId: athlete.id,
       planId: plan.id
     }).subscribe({
       next: (res) => {
         this.isSubmitting.set(false);
-        this.paymentReported.emit(res);
-        this.closeModal();
+        this.completedTransaction.set(res);
       },
       error: (err) => {
         this.isSubmitting.set(false);
@@ -285,6 +319,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   }
 
   copyToClipboard(text: string, label: string): void {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
     navigator.clipboard.writeText(text).then(() => {
       this.copyFeedback.set(`${label} copiado`);
       setTimeout(() => this.copyFeedback.set(null), 2500);
@@ -296,9 +331,10 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
 
   // --- Flujo Binance Pay ---
   generateBinanceOrder(): void {
+    const athlete = this.selectedAthlete();
     const plan = this.selectedPlan();
-    if (!plan) {
-      this.errorMessage.set('Por favor selecciona un plan antes de generar la orden.');
+    if (!athlete || !plan) {
+      this.errorMessage.set('Por favor selecciona un atleta y un plan antes de generar la orden.');
       return;
     }
 
@@ -307,7 +343,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.binanceNotice.set(null);
 
     this.paymentService.createBinanceOrder({
-      athleteId: this.athlete.id,
+      athleteId: athlete.id,
       planId: plan.id,
       discountCode: this.appliedCoupon()?.code
     }).subscribe({
@@ -323,18 +359,21 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   }
 
   checkBinanceStatus(): void {
+    const athlete = this.selectedAthlete();
+    if (!athlete) return;
+
     this.binanceNotice.set('Verificando activación en la red Binance...');
-    this.paymentService.getAthleteSubscriptionStatus(this.athlete.id).subscribe({
+    this.paymentService.getAthleteSubscriptionStatus(athlete.id).subscribe({
       next: (status) => {
         if (status.status === 'ACTIVE') {
-          this.paymentReported.emit({
+          this.completedTransaction.set({
             id: this.binanceOrder()?.transactionId || '',
-            athleteId: this.athlete.id,
-            athleteName: this.athlete.fullName,
+            athleteId: athlete.id,
+            athleteName: athlete.fullName,
             planId: this.selectedPlan()?.id || 'PRO_MONTHLY',
             planName: this.selectedPlan()?.name || 'Plan Pro',
             method: 'BINANCE_PAY',
-            amountUsd: this.selectedPlan()?.priceUsd || 5,
+            amountUsd: this.effectiveAmountUsd,
             amountVes: 0,
             bcvExchangeRate: 0,
             referenceNumber: this.binanceOrder()?.gatewayOrderId || '',
@@ -342,7 +381,6 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
             status: 'APPROVED',
             createdAt: new Date().toISOString()
           });
-          this.closeModal();
         } else {
           this.binanceNotice.set('Aún estamos esperando la confirmación de Binance Pay. En cuanto envíes la transferencia se activará en pocos segundos.');
         }
@@ -355,11 +393,13 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
 
   // --- Flujo Pago Móvil ---
   submitReport(): void {
+    const athlete = this.selectedAthlete();
+    if (!athlete) return;
+
     if (!this.referenceNumber || this.referenceNumber.trim().length < 4) {
       this.errorMessage.set('Por favor ingresa un número de referencia bancaria válido (mínimo 4 dígitos).');
       return;
     }
-
     if (!this.paymentDate) {
       this.errorMessage.set('Por favor indica la fecha en que realizaste el pago.');
       return;
@@ -375,7 +415,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.paymentService.reportPagoMovil({
-      athleteId: this.athlete.id,
+      athleteId: athlete.id,
       planId: plan.id,
       referenceNumber: this.referenceNumber.trim(),
       paymentDate: this.paymentDate,
@@ -387,7 +427,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     }).subscribe({
       next: (res) => {
         this.isSubmitting.set(false);
-        this.paymentReported.emit(res);
+        this.completedTransaction.set(res);
       },
       error: (err) => {
         this.isSubmitting.set(false);
@@ -398,11 +438,13 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
 
   // --- Reporte Manual Binance ---
   submitBinanceReport(): void {
+    const athlete = this.selectedAthlete();
+    if (!athlete) return;
+
     if (!this.binanceReference || this.binanceReference.trim().length < 4) {
       this.errorMessage.set('Por favor ingresa un número de referencia o TxID válido de Binance (mínimo 4 caracteres).');
       return;
     }
-
     if (!this.binancePaymentDate) {
       this.errorMessage.set('Por favor indica la fecha en que realizaste la transferencia.');
       return;
@@ -418,7 +460,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.paymentService.reportBinanceManual({
-      athleteId: this.athlete.id,
+      athleteId: athlete.id,
       planId: plan.id,
       referenceNumber: this.binanceReference.trim(),
       paymentDate: this.binancePaymentDate,
@@ -427,7 +469,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     }).subscribe({
       next: (res) => {
         this.isSubmittingBinance.set(false);
-        this.paymentReported.emit(res);
+        this.completedTransaction.set(res);
       },
       error: (err) => {
         this.isSubmittingBinance.set(false);
@@ -436,18 +478,19 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     });
   }
 
-  // --- Reporte Manual Zelle (TS-66) ---
+  // --- Reporte Manual Zelle ---
   submitZelleReport(): void {
+    const athlete = this.selectedAthlete();
+    if (!athlete) return;
+
     if (!this.zelleReference || this.zelleReference.trim().length < 4) {
       this.errorMessage.set('Por favor ingresa un número de confirmación de Zelle válido (mínimo 4 caracteres).');
       return;
     }
-
     if (!this.zelleOriginAccountHolder || !this.zelleOriginAccountHolder.trim()) {
       this.errorMessage.set('Por favor ingresa el nombre del titular de la cuenta desde la que enviaste el Zelle.');
       return;
     }
-
     if (!this.zellePaymentDate) {
       this.errorMessage.set('Por favor indica la fecha en que realizaste la transferencia de Zelle.');
       return;
@@ -463,7 +506,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.paymentService.reportZellePayment({
-      athleteId: this.athlete.id,
+      athleteId: athlete.id,
       planId: plan.id,
       referenceNumber: this.zelleReference.trim(),
       originAccountHolder: this.zelleOriginAccountHolder.trim(),
@@ -473,7 +516,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     }).subscribe({
       next: (res) => {
         this.isSubmittingZelle.set(false);
-        this.paymentReported.emit(res);
+        this.completedTransaction.set(res);
       },
       error: (err) => {
         this.isSubmittingZelle.set(false);
@@ -482,10 +525,11 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     });
   }
 
-  // --- Flujo Pasarela Automatizada VexPay (TS-78) ---
+  // --- Flujo Pasarela Automatizada VexPay ---
   loadVexPayQuote(): void {
+    const athlete = this.selectedAthlete();
     const plan = this.selectedPlan();
-    if (!plan) return;
+    if (!athlete || !plan) return;
 
     this.isLoadingVexPayQuote.set(true);
     this.vexPayQuoteError.set(null);
@@ -493,7 +537,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.paymentService.getVexPayQuote({
       planId: plan.id,
       discountCode: this.appliedCoupon()?.code,
-      athleteId: this.athlete.id
+      athleteId: athlete.id
     }).subscribe({
       next: (quote) => {
         this.vexPayQuote.set(quote);
@@ -508,9 +552,10 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
   }
 
   startVexPayCheckout(): void {
+    const athlete = this.selectedAthlete();
     const plan = this.selectedPlan();
-    if (!plan) {
-      this.errorMessage.set('Por favor selecciona un plan antes de continuar.');
+    if (!athlete || !plan) {
+      this.errorMessage.set('Por favor selecciona un atleta y un plan antes de continuar.');
       return;
     }
 
@@ -518,7 +563,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     this.errorMessage.set(null);
 
     this.paymentService.createVexPaySession({
-      athleteId: this.athlete.id,
+      athleteId: athlete.id,
       planId: plan.id,
       discountCode: this.appliedCoupon()?.code
     }).subscribe({
@@ -529,7 +574,7 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
             sessionStorage.setItem('vexpay_pending_session', JSON.stringify({
               sessionId: res.sessionId,
               transactionId: res.transactionId,
-              athleteId: this.athlete.id
+              athleteId: athlete.id
             }));
           }
         } catch {
@@ -550,9 +595,12 @@ export class CheckoutPagoMovilModalComponent implements OnInit {
     }
   }
 
-  closeModal(): void {
-    if (!this.isSubmitting() && !this.isSubmittingBinance() && !this.isSubmittingZelle() && !this.isGeneratingBinance() && !this.isCreatingVexPaySession()) {
-      this.close.emit();
-    }
+  startAnotherPayment(): void {
+    this.completedTransaction.set(null);
+    this.errorMessage.set(null);
+    this.referenceNumber = '';
+    this.binanceReference = '';
+    this.zelleReference = '';
+    this.removeCoupon();
   }
 }

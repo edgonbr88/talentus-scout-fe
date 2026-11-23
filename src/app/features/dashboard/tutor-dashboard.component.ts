@@ -9,7 +9,6 @@ import { AthleteSummary } from '../../core/models/athlete.model';
 import { AthleteVideoResponse } from '../../core/models/video.model';
 import { VideoUploaderComponent } from '../videos/video-uploader.component';
 import { RequestCertificationModalComponent } from '../certification/request-certification-modal.component';
-import { CheckoutPagoMovilModalComponent } from '../payments/checkout-pago-movil-modal.component';
 import { TutorRadarMetricsResponse } from '../../core/models/scout-contact.model';
 import { PaymentTransactionResponse } from '../../core/models/payment.model';
 
@@ -20,7 +19,7 @@ import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
 @Component({
   selector: 'app-tutor-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, VideoUploaderComponent, RequestCertificationModalComponent, CheckoutPagoMovilModalComponent, RegisterAthleteModalComponent, MediaUrlPipe],
+  imports: [CommonModule, RouterLink, FormsModule, VideoUploaderComponent, RequestCertificationModalComponent, RegisterAthleteModalComponent, MediaUrlPipe],
   templateUrl: './tutor-dashboard.component.html',
   styles: [`
     .dashboard-page {
@@ -1514,9 +1513,6 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
   certAthleteId = '';
   certAthleteName = '';
 
-  showCheckoutModal = false;
-  selectedAthleteForCheckout: AthleteSummary | null = null;
-
   showIdentityModal = false;
   selectedAthleteForIdentity: AthleteSummary | null = null;
   identityDocType = 'PARTIDA_NACIMIENTO';
@@ -1777,19 +1773,7 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
   }
 
   openCheckoutModal(athlete: AthleteSummary): void {
-    this.selectedAthleteForCheckout = athlete;
-    this.showCheckoutModal = true;
-  }
-
-  closeCheckoutModal(): void {
-    this.showCheckoutModal = false;
-    this.selectedAthleteForCheckout = null;
-  }
-
-  onPaymentReported(tx: PaymentTransactionResponse): void {
-    this.lastUploadedNotice = `Pago Móvil reportado con éxito (Ref: #${tx.referenceNumber}). Quedará activo al ser conciliado por administración.`;
-    this.closeCheckoutModal();
-    this.loadAthletes();
+    this.router.navigate(['/pagos', athlete.id]);
   }
 
   isDownloadingCv(athleteId: string): boolean {
