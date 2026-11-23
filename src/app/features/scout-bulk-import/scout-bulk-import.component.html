@@ -49,14 +49,14 @@
       <section class="bento-card-main" aria-label="Formulario de Carga Masiva">
         
         <!-- Pestañas de Navegación -->
-        <div class="tabs-nav">
-          <button type="button" class="tab-btn" [class.active]="activeTab === 'file'" (click)="setTab('file')">
+        <div class="tabs-nav" role="tablist" aria-label="Métodos de carga de atletas">
+          <button type="button" role="tab" [attr.aria-selected]="activeTab === 'file'" class="tab-btn" [class.active]="activeTab === 'file'" (click)="setTab('file')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 8 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
             </svg>
             <span>Archivo Local (.xlsx / .csv)</span>
           </button>
-          <button type="button" class="tab-btn" [class.active]="activeTab === 'google'" (click)="setTab('google')">
+          <button type="button" role="tab" [attr.aria-selected]="activeTab === 'google'" class="tab-btn" [class.active]="activeTab === 'google'" (click)="setTab('google')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/>
               <line x1="2" y1="12" x2="22" y2="12"/>
@@ -64,7 +64,7 @@
             </svg>
             <span>Google Sheets</span>
           </button>
-          <button type="button" class="tab-btn" [class.active]="activeTab === 'individual'" (click)="setTab('individual')">
+          <button type="button" role="tab" [attr.aria-selected]="activeTab === 'individual'" class="tab-btn" [class.active]="activeTab === 'individual'" (click)="setTab('individual')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
               <circle cx="9" cy="7" r="4"/>
