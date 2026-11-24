@@ -46,6 +46,7 @@
   gap: 10px;
 }
 
+.btn-network-link,
 .btn-bulk-import-link,
 .btn-individual-import-link {
   display: inline-flex;
@@ -54,11 +55,22 @@
   gap: 8px;
   font-weight: 700;
   font-size: 13px;
-  padding: 10px 16px;
+  padding: 9px 16px;
   border-radius: 12px;
   text-decoration: none;
   white-space: nowrap;
   transition: all 0.2s ease;
+}
+
+.btn-network-link {
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  color: #fbbf24;
+}
+
+.btn-network-link:hover {
+  background: rgba(245, 158, 11, 0.24);
+  border-color: #fbbf24;
 }
 
 .btn-bulk-import-link {
