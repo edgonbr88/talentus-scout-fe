@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { AthleteSummary, CreateAthleteRequest, ClubDto, PublicAthleteResponse } from '../models/athlete.model';
+import { AthleteSummary, CreateAthleteRequest, UpdateAthleteRequest, ClubDto, PublicAthleteResponse } from '../models/athlete.model';
 import { TutorRadarMetricsResponse } from '../models/scout-contact.model';
 
 @Injectable({
@@ -12,6 +12,10 @@ export class AthleteService {
 
   createAthlete(request: CreateAthleteRequest): Observable<AthleteSummary> {
     return this.http.post<AthleteSummary>('/api/v1/athletes', request);
+  }
+
+  updateAthlete(athleteId: string, request: UpdateAthleteRequest): Observable<AthleteSummary> {
+    return this.http.put<AthleteSummary>(`/api/v1/athletes/${athleteId}`, request);
   }
 
   getClubs(): Observable<ClubDto[]> {

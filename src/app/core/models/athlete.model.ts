@@ -6,7 +6,20 @@ export interface AthleteSummary {
   birthDate: string;
   age: number;
   primaryPosition: string;
+  secondaryPosition?: string;
   preferredFoot: string;
+  nationality?: string;
+  secondaryPassports?: string;
+  currentClub?: ClubDto;
+  federationLicenseNumber?: string;
+  heightCm?: number;
+  weightKg?: number;
+  bio?: string;
+  instagramUrl?: string | null;
+  tiktokUrl?: string | null;
+  youtubeUrl?: string | null;
+  otherVideoPlatformUrl?: string | null;
+  otherVideoPlatformLabel?: string | null;
   slug: string;
   profilePhotoUrl?: string;
   isPublic: boolean;
@@ -21,6 +34,32 @@ export interface AthleteSummary {
   legalVerificationStatus?: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
   legalVerificationNotes?: string;
   legalVerifiedAt?: string;
+}
+
+export interface PublicSocialLinks {
+  instagramUrl?: string | null;
+  tiktokUrl?: string | null;
+  youtubeUrl?: string | null;
+  otherPlatformUrl?: string | null;
+  otherPlatformLabel?: string | null;
+}
+
+export interface UpdateAthleteRequest {
+  primaryPosition?: string;
+  secondaryPosition?: string;
+  preferredFoot?: string;
+  currentClubId?: string | null;
+  federationLicenseNumber?: string;
+  secondaryPassports?: string;
+  heightCm?: number | null;
+  weightKg?: number | null;
+  bio?: string;
+  isPublic?: boolean;
+  instagramUrl?: string | null;
+  tiktokUrl?: string | null;
+  youtubeUrl?: string | null;
+  otherVideoPlatformUrl?: string | null;
+  otherVideoPlatformLabel?: string | null;
 }
 
 export interface PublicClubDto {
@@ -85,6 +124,7 @@ export interface PublicAthleteResponse {
   metrics?: AthleteMetricsDto;
   badges: PublicBadgeDto[];
   videos: PublicVideoDto[];
+  socialLinks?: PublicSocialLinks | null;
 }
 
 export interface CreateAthleteRequest {

@@ -58,8 +58,11 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
       'downloadAthleteCvPdf',
       'uploadIdentityDocument',
       'uploadAthletePhoto',
-      'deleteAthletePhoto'
+      'deleteAthletePhoto',
+      'getClubs',
+      'updateAthlete'
     ]);
+    athleteServiceSpy.getClubs.and.returnValue(of([]));
     videoUploadServiceSpy = jasmine.createSpyObj('VideoUploadService', [
       'getVideosByAthlete'
     ]);
@@ -817,6 +820,62 @@ describe('TutorDashboardComponent - TS-29 Video Upload Restrictions', () => {
       expect(banner).toBeTruthy();
       expect(banner.textContent).toContain('En verificación bancaria');
       expect(banner.textContent).toContain('Verificar nuevamente');
+    });
+  });
+
+  describe('TS-86: Edición de Ficha y Redes Sociales / Videos Externos', () => {
+    it('should open EditAthleteModal in SOCIAL_LINKS section when athlete has ACTIVE subscription', () => {
+      athleteServiceSpy.getMyAthletes.and.returnValue(of([mockAthlete1]));
+      fixture = TestBed.createComponent(TutorDashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const socialBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.btn-social-links');
+      expect(socialBtn).toBeTruthy();
+      expect(socialBtn.textContent).toContain('Redes y Videos');
+
+      socialBtn.click();
+      fixture.detectChanges();
+
+      expect(component.showEditAthleteModal).toBeTrue();
+      expect(component.editModalInitialSection).toBe('SOCIAL_LINKS');
+      expect(component.selectedAthleteForEdit?.id).toBe(mockAthlete1.id);
+    });
+
+    it('should show locked button and redirect to /pagos/:id when athlete subscription is INACTIVE', () => {
+      athleteServiceSpy.getMyAthletes.and.returnValue(of([mockAthlete2]));
+      const router = TestBed.inject(Router);
+      spyOn(router, 'navigate');
+
+      fixture = TestBed.createComponent(TutorDashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const lockedBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.btn-social-links-locked');
+      expect(lockedBtn).toBeTruthy();
+      expect(lockedBtn.textContent).toContain('Requiere Pro');
+
+      lockedBtn.click();
+      fixture.detectChanges();
+
+      expect(component.showEditAthleteModal).toBeFalse();
+      expect(router.navigate).toHaveBeenCalledWith(['/pagos', mockAthlete2.id]);
+    });
+
+    it('should open EditAthleteModal in GENERAL section via Editar Ficha button even if INACTIVE', () => {
+      athleteServiceSpy.getMyAthletes.and.returnValue(of([mockAthlete2]));
+      fixture = TestBed.createComponent(TutorDashboardComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      const editBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.btn-edit-athlete');
+      expect(editBtn).toBeTruthy();
+      editBtn.click();
+      fixture.detectChanges();
+
+      expect(component.showEditAthleteModal).toBeTrue();
+      expect(component.editModalInitialSection).toBe('GENERAL');
+      expect(component.selectedAthleteForEdit?.id).toBe(mockAthlete2.id);
     });
   });
 });

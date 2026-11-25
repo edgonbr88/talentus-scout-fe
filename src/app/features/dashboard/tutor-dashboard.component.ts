@@ -14,12 +14,13 @@ import { PaymentTransactionResponse } from '../../core/models/payment.model';
 
 import { FormsModule } from '@angular/forms';
 import { RegisterAthleteModalComponent } from './register-athlete-modal/register-athlete-modal.component';
+import { EditAthleteModalComponent, EditAthleteSection } from './edit-athlete-modal/edit-athlete-modal.component';
 import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
 
 @Component({
   selector: 'app-tutor-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, VideoUploaderComponent, RequestCertificationModalComponent, RegisterAthleteModalComponent, MediaUrlPipe],
+  imports: [CommonModule, RouterLink, FormsModule, VideoUploaderComponent, RequestCertificationModalComponent, RegisterAthleteModalComponent, EditAthleteModalComponent, MediaUrlPipe],
   templateUrl: './tutor-dashboard.component.html',
   styles: [`
     .dashboard-page {
@@ -399,6 +400,29 @@ import { MediaUrlPipe } from '../../core/pipes/media-url.pipe';
     .btn-doc:hover {
       background: rgba(56, 189, 248, 0.12);
       border-color: #38bdf8;
+    }
+
+    .btn-edit-athlete {
+      border-color: rgba(148, 163, 184, 0.45);
+      color: #E2E8F0;
+    }
+
+    .btn-edit-athlete:hover {
+      background: rgba(148, 163, 184, 0.14);
+      border-color: #94A3B8;
+      color: #FFFFFF;
+    }
+
+    .btn-social-links {
+      border-color: rgba(56, 189, 248, 0.45);
+      color: #7DD3FC;
+      background: rgba(14, 165, 233, 0.08);
+    }
+
+    .btn-social-links:hover {
+      background: rgba(14, 165, 233, 0.18);
+      border-color: #38BDF8;
+      color: #E0F2FE;
     }
 
     .badge-pro-active {
@@ -1532,6 +1556,10 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
   showDeletePhotoConfirm = false;
   isDeletingPhoto = false;
 
+  showEditAthleteModal = false;
+  selectedAthleteForEdit: AthleteSummary | null = null;
+  editModalInitialSection: EditAthleteSection = 'GENERAL';
+
   ngOnInit(): void {
     this.handleVexPayReturnParams();
     if (!this.authService.currentUser() && this.authService.token()) {
@@ -1755,6 +1783,43 @@ export class TutorDashboardComponent implements OnInit, OnDestroy {
     this.showAthleteModal = false;
     this.lastUploadedNotice = `Cédula deportiva oficial de "${newAthlete.fullName}" creada con éxito.`;
     this.loadAthletes();
+  }
+
+  openEditAthleteModal(athlete: AthleteSummary, initialSection: EditAthleteSection = 'GENERAL'): void {
+    this.selectedAthleteForEdit = athlete;
+    this.editModalInitialSection = initialSection;
+    this.showEditAthleteModal = true;
+    if (this.document?.body) {
+      this.document.body.style.overflow = 'hidden';
+    }
+  }
+
+  handleSocialLinksAction(athlete: AthleteSummary): void {
+    if (athlete.subscriptionStatus !== 'ACTIVE') {
+      this.lastUploadedNotice = `Para agregar o modificar redes sociales y videos externos de ${athlete.fullName}, activa su Plan Pro.`;
+      this.openCheckoutModal(athlete);
+      return;
+    }
+    this.openEditAthleteModal(athlete, 'SOCIAL_LINKS');
+  }
+
+  closeEditAthleteModal(): void {
+    this.showEditAthleteModal = false;
+    this.selectedAthleteForEdit = null;
+    if (this.document?.body) {
+      this.document.body.style.overflow = '';
+    }
+  }
+
+  onAthleteUpdated(updated: AthleteSummary): void {
+    this.closeEditAthleteModal();
+    this.lastUploadedNotice = `Ficha deportiva de "${updated.fullName}" actualizada con éxito.`;
+    this.loadAthletes();
+  }
+
+  onEditUpgradeRequested(athlete: AthleteSummary): void {
+    this.closeEditAthleteModal();
+    this.openCheckoutModal(athlete);
   }
 
   openCertificationModal(athlete: AthleteSummary): void {
