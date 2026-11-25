@@ -15,8 +15,12 @@
       </div>
 
       <div class="header-actions-group">
-        @if (authService.canAccessBulkImport()) {
-          <div class="header-quick-actions">
+        <div class="header-quick-actions">
+          <a routerLink="/scout/network" class="btn-network-link">
+            <span>🤝</span>
+            <span>Red de Scouts</span>
+          </a>
+          @if (authService.canAccessBulkImport()) {
             <a routerLink="/scout/bulk-import" class="btn-bulk-import-link">
               <span>📥</span>
               <span>Carga Masiva de Atletas</span>
@@ -24,8 +28,8 @@
             <a routerLink="/scout/bulk-import" [queryParams]="{ tab: 'individual' }" class="btn-individual-import-link">
               <span>+ Carga Individual</span>
             </a>
-          </div>
-        }
+          }
+        </div>
 
         <div class="radar-counter-card">
           <span class="counter-label">Talentos en Radar</span>

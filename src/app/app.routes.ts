@@ -130,6 +130,12 @@ export const routes: Routes = [
     title: 'Directorio de Búsqueda de Talentos — Talentus Scout'
   },
   {
+    path: 'scout/network',
+    loadComponent: () => import('./features/scout-network/scout-network.component').then(m => m.ScoutNetworkComponent),
+    canActivate: [authGuard, scoutGuard],
+    title: 'Red de Scouts — Talentus Scout'
+  },
+  {
     path: 'scout/bulk-import',
     loadComponent: () => import('./features/scout-bulk-import/scout-bulk-import.component').then(m => m.ScoutBulkImportComponent),
     canActivate: [authGuard, bulkImportGuard],

@@ -1,0 +1,358 @@
+<div class="network-layout">
+  <!-- Cabecera Táctica de la Red de Scouts -->
+  <header class="network-header">
+    <div class="container header-inner">
+      <div class="header-titles">
+        <a routerLink="/scout/directory" class="back-link">← Volver al Directorio de Talentos</a>
+        <h1 class="page-title">Red de Scouts</h1>
+        <p class="page-subtitle">
+          Conecta con colegas acreditados, coordina referencias deportivas y amplía alianzas entre clubes y academias.
+        </p>
+      </div>
+
+      <div class="header-right-group">
+        @if (isScoutRole()) {
+          <button type="button" class="btn-privacy-settings" (click)="openSettingsModal()">
+            <span>⚙️</span>
+            <span>Mi Perfil y Privacidad</span>
+          </button>
+        }
+
+        <div class="colleagues-counter-card">
+          <span class="counter-label">Colegas visibles</span>
+          <strong class="counter-value">{{ totalElements() }}</strong>
+          <span class="counter-sub">Scouts verificados</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container network-main">
+    <!-- Barra de Búsqueda y Filtros -->
+    <section class="filters-bar" aria-label="Filtros de la Red de Scouts">
+      <div class="search-box-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          id="networkSearchInput"
+          type="text"
+          class="search-input"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="onSearchQueryChange($event)"
+          (keydown.enter)="onSearchEnter()"
+          placeholder="Buscar por nombre, club o cargo..."
+          aria-label="Buscar colegas por nombre, club o cargo"
+        />
+        @if (searchQuery()) {
+          <button type="button" class="btn-clear-search" (click)="clearSearch()" aria-label="Limpiar búsqueda">
+            ✕
+          </button>
+        }
+      </div>
+
+      <div class="filter-controls">
+        <select
+          id="networkOrgSelect"
+          class="filter-select"
+          [ngModel]="selectedOrganization()"
+          (ngModelChange)="onOrganizationChange($event)"
+          aria-label="Filtrar por club u organización"
+        >
+          <option value="">Todos los clubes / organizaciones</option>
+          @for (org of facets()?.organizations || []; track org.name) {
+            <option [value]="org.name">{{ org.name }}</option>
+          }
+        </select>
+
+        <select
+          id="networkCountrySelect"
+          class="filter-select"
+          [ngModel]="selectedCountry()"
+          (ngModelChange)="onCountryChange($event)"
+          aria-label="Filtrar por país"
+        >
+          <option value="">Todos los países</option>
+          @for (country of facets()?.countries || []; track country) {
+            <option [value]="country">{{ country }}</option>
+          }
+        </select>
+
+        @if (facets()?.canFilterSameClub) {
+          <button
+            type="button"
+            class="chip-same-club"
+            [class.active]="sameClubOnly()"
+            (click)="toggleSameClubOnly()"
+          >
+            <span>🏟️</span>
+            <span>Colegas de mi mismo club</span>
+          </button>
+        }
+
+        @if (hasActiveFilters()) {
+          <button type="button" class="btn-reset-filters" (click)="resetFilters()">
+            Reiniciar filtros
+          </button>
+        }
+      </div>
+    </section>
+
+    @if (contactError()) {
+      <div class="contact-error-banner" role="alert">
+        ⚠ {{ contactError() }}
+      </div>
+    }
+
+    <!-- Estados de Carga / Error / Vacío / Grilla -->
+    @if (isLoading()) {
+      <div class="state-box">
+        <div class="network-spinner"></div>
+        <p>Sincronizando red de colegas verificados...</p>
+      </div>
+    } @else if (hasError()) {
+      <div class="state-box">
+        <h3>No se pudo cargar la Red de Scouts</h3>
+        <p>Ocurrió un inconveniente al consultar el directorio de colegas. Intenta recargar la vista.</p>
+        <button type="button" class="btn btn-primary" (click)="fetchColleagues(0)">Reintentar</button>
+      </div>
+    } @else if (colleagues().length === 0) {
+      <div class="state-box">
+        <h3>Sin colegas con estos criterios</h3>
+        <p>No se encontraron scouts acreditados que coincidan con tu búsqueda actual. Prueba ampliando los filtros.</p>
+        @if (hasActiveFilters()) {
+          <button type="button" class="btn btn-secondary" (click)="resetFilters()">Ver toda la red</button>
+        }
+      </div>
+    } @else {
+      <section class="colleagues-grid" aria-label="Listado de colegas scouts">
+        @for (item of colleagues(); track item.scoutProfileId) {
+          <article class="colleague-card" [class.same-club-card]="item.sameClubAsViewer">
+            <div class="card-top-row">
+              <div class="avatar-block">
+                @if (hasValidPhoto(item)) {
+                  <img
+                    [src]="item.profilePhotoUrl! | mediaUrl"
+                    [alt]="item.fullName"
+                    class="scout-photo"
+                    loading="lazy"
+                    (error)="onPhotoError(item.scoutProfileId)"
+                  />
+                } @else {
+                  <div class="scout-initials-avatar" aria-hidden="true">
+                    {{ getInitials(item.fullName) }}
+                  </div>
+                }
+
+                @if (hasValidClubLogo(item)) {
+                  <img
+                    [src]="item.clubLogoUrl! | mediaUrl"
+                    [alt]="item.organizationName"
+                    class="club-mini-badge"
+                    loading="lazy"
+                    (error)="onClubLogoError(item.scoutProfileId)"
+                  />
+                }
+              </div>
+
+              <div class="identity-block">
+                <div class="name-badges-row">
+                  <h2 class="scout-name">{{ item.fullName }}</h2>
+                  @if (item.sameClubAsViewer) {
+                    <span class="same-club-pill">Tu mismo club</span>
+                  }
+                </div>
+                <p class="scout-role">{{ item.scoutRole }}</p>
+                <div class="scout-org-line">
+                  <span class="org-name">{{ item.organizationName }}</span>
+                  @if (item.clubVerifiedOfficial) {
+                    <span class="verified-club-tag" title="Club oficial verificado">✓ Oficial</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="card-meta-row">
+              @if (item.country || item.state) {
+                <span class="meta-pill">
+                  📍 {{ item.state ? (item.state + ', ') : '' }}{{ item.country || '' }}
+                </span>
+              }
+              @if (item.linkedinUrl) {
+                <a
+                  [href]="item.linkedinUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="meta-pill linkedin-link"
+                >
+                  in LinkedIn
+                </a>
+              }
+            </div>
+
+            <div class="card-contact-actions">
+              @if (item.whatsappAvailable) {
+                <button
+                  type="button"
+                  class="btn-contact btn-whatsapp"
+                  [disabled]="!!contactingKey()"
+                  (click)="contactColleague(item, 'WHATSAPP')"
+                >
+                  <span>{{ isContacting(item, 'WHATSAPP') ? 'Conectando...' : 'WhatsApp' }}</span>
+                </button>
+              }
+
+              @if (item.emailAvailable) {
+                <button
+                  type="button"
+                  class="btn-contact btn-email"
+                  [disabled]="!!contactingKey()"
+                  (click)="contactColleague(item, 'EMAIL')"
+                >
+                  <span>{{ isContacting(item, 'EMAIL') ? 'Conectando...' : 'Correo' }}</span>
+                </button>
+              }
+
+              @if (!item.whatsappAvailable && !item.emailAvailable) {
+                <span class="privacy-hidden-note">Canal oculto por privacidad</span>
+              }
+            </div>
+          </article>
+        }
+      </section>
+
+      @if (totalPages() > 1) {
+        <nav class="pagination-bar" aria-label="Paginación de colegas">
+          <button
+            type="button"
+            class="page-btn"
+            [disabled]="currentPage() === 0"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            ← Anterior
+          </button>
+          <span class="page-info">Página {{ currentPage() + 1 }} de {{ totalPages() }}</span>
+          <button
+            type="button"
+            class="page-btn"
+            [disabled]="currentPage() >= totalPages() - 1"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            Siguiente →
+          </button>
+        </nav>
+      }
+    }
+  </main>
+
+  <!-- Modal Mi Perfil y Privacidad en la Red (solo SCOUT) -->
+  @if (showSettingsModal()) {
+    <div class="modal-backdrop" (click)="closeSettingsModal()" role="dialog" aria-modal="true" aria-label="Mi Perfil y Privacidad en la Red">
+      <div class="settings-modal" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <div>
+            <h2>Mi Perfil y Privacidad en la Red</h2>
+            <p class="modal-sub">Controla tu foto pública y qué canales de contacto ven otros scouts verificados.</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeSettingsModal()" aria-label="Cerrar configuración">
+            ✕
+          </button>
+        </header>
+
+        @if (isLoadingSettings()) {
+          <div class="modal-loading">Cargando configuración...</div>
+        } @else {
+          <div class="modal-body">
+            @if (settingsError()) {
+              <div class="alert-box alert-error" role="alert">⚠ {{ settingsError() }}</div>
+            }
+            @if (settingsSuccess()) {
+              <div class="alert-box alert-success" role="status">✓ {{ settingsSuccess() }}</div>
+            }
+
+            <!-- Bloque de Foto Pública -->
+            <div class="photo-settings-row">
+              <div class="photo-preview-box">
+                @if (mySettings()?.profilePhotoUrl) {
+                  <img [src]="mySettings()!.profilePhotoUrl! | mediaUrl" alt="Tu foto pública de perfil" class="preview-img" />
+                } @else {
+                  <div class="preview-fallback">{{ getInitials(authService.currentUser()?.fullName || 'TS') }}</div>
+                }
+              </div>
+
+              <div class="photo-actions-col">
+                <strong>Fotografía Pública de Perfil</strong>
+                <small>Solo visible para scouts verificados. Nunca se utiliza tu selfie de verificación KYC. Máx. 5MB (PNG, JPG, WEBP).</small>
+                <div class="photo-btns">
+                  <label class="btn-upload-photo">
+                    <input type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" [disabled]="isUploadingPhoto()" hidden />
+                    <span>{{ isUploadingPhoto() ? 'Subiendo...' : 'Subir foto pública' }}</span>
+                  </label>
+                  @if (mySettings()?.profilePhotoUrl) {
+                    <button type="button" class="btn-delete-photo" (click)="deleteMyPhoto()" [disabled]="isDeletingPhoto()">
+                      {{ isDeletingPhoto() ? 'Eliminando...' : 'Eliminar foto' }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Switches de Privacidad -->
+            <div class="privacy-switches">
+              <label class="switch-row">
+                <input type="checkbox" [ngModel]="editShowInNetwork()" (ngModelChange)="editShowInNetwork.set($event)" />
+                <span>
+                  <strong>Aparecer visible en la Red de Scouts</strong>
+                  <small>Si desactivas esta opción, otros colegas no te verán en el directorio.</small>
+                </span>
+              </label>
+
+              <label class="switch-row">
+                <input type="checkbox" [ngModel]="editShowWhatsapp()" (ngModelChange)="editShowWhatsapp.set($event)" />
+                <span>
+                  <strong>Permitir contacto por WhatsApp</strong>
+                  <small>Tu número no se expone en el listado; se abre mediante enlace auditado bajo demanda.</small>
+                </span>
+              </label>
+
+              <label class="switch-row">
+                <input type="checkbox" [ngModel]="editShowEmail()" (ngModelChange)="editShowEmail.set($event)" />
+                <span>
+                  <strong>Permitir contacto por Correo Electrónico</strong>
+                  <small>Los colegas acreditados podrán escribirte desde su cliente de correo.</small>
+                </span>
+              </label>
+            </div>
+
+            <!-- Ubicación y LinkedIn -->
+            <div class="settings-form-grid">
+              <div class="form-field">
+                <label for="settingsCountry">País</label>
+                <input id="settingsCountry" type="text" class="form-input" [ngModel]="editCountry()" (ngModelChange)="editCountry.set($event)" placeholder="Ej. Venezuela" />
+              </div>
+              <div class="form-field">
+                <label for="settingsState">Estado / Región</label>
+                <input id="settingsState" type="text" class="form-input" [ngModel]="editState()" (ngModelChange)="editState.set($event)" placeholder="Ej. Distrito Capital" />
+              </div>
+              <div class="form-field form-field-full">
+                <label for="settingsLinkedin">Perfil de LinkedIn (opcional)</label>
+                <input id="settingsLinkedin" type="url" class="form-input" [ngModel]="editLinkedinUrl()" (ngModelChange)="editLinkedinUrl.set($event)" placeholder="https://www.linkedin.com/in/tu-perfil" />
+              </div>
+            </div>
+          </div>
+
+          <footer class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeSettingsModal()" [disabled]="isSavingSettings()">
+              Cerrar
+            </button>
+            <button type="button" class="btn btn-primary" (click)="saveNetworkSettings()" [disabled]="isSavingSettings()">
+              {{ isSavingSettings() ? 'Guardando...' : 'Guardar preferencias' }}
+            </button>
+          </footer>
+        }
+      </div>
+    </div>
+  }
+</div>
