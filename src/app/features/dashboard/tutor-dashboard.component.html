@@ -259,6 +259,29 @@
               🔒 Cargar Video (Requiere Pro)
             </button>
             <button
+              class="btn btn-secondary btn-sm btn-edit-athlete"
+              (click)="openEditAthleteModal(athlete, 'GENERAL')"
+              type="button"
+              title="Editar datos deportivos y biografía del atleta">
+              ✏️ Editar Ficha
+            </button>
+            <button
+              *ngIf="athlete.subscriptionStatus === 'ACTIVE'"
+              class="btn btn-secondary btn-sm btn-social-links"
+              (click)="handleSocialLinksAction(athlete)"
+              type="button"
+              title="Gestionar enlaces de Instagram, TikTok, YouTube y plataformas externas">
+              🌐 Redes y Videos
+            </button>
+            <button
+              *ngIf="athlete.subscriptionStatus !== 'ACTIVE'"
+              class="btn btn-secondary btn-sm btn-social-links-locked btn-video-locked"
+              (click)="handleSocialLinksAction(athlete)"
+              type="button"
+              title="Requiere membresía Pro activa para agregar o editar enlaces externos">
+              🔒 Redes y Videos (Requiere Pro)
+            </button>
+            <button
               class="btn btn-secondary btn-sm btn-certify"
               (click)="openCertificationModal(athlete)"
               type="button"
@@ -722,4 +745,13 @@
   (athleteCreated)="onAthleteCreated($event)"
   (closed)="closeAthleteModal()">
 </app-register-athlete-modal>
+
+<app-edit-athlete-modal
+  *ngIf="showEditAthleteModal && selectedAthleteForEdit"
+  [athlete]="selectedAthleteForEdit"
+  [initialSection]="editModalInitialSection"
+  (athleteUpdated)="onAthleteUpdated($event)"
+  (upgradeRequested)="onEditUpgradeRequested($event)"
+  (closed)="closeEditAthleteModal()">
+</app-edit-athlete-modal>
 

@@ -84,6 +84,28 @@ export class BentoProfileComponent implements OnInit {
     return user.role === 'SCOUT' && user.scoutVerificationStatus === 'APPROVED';
   });
 
+  public canViewSocialLinks = computed(() => {
+    if (!this.canViewTechnicalAnalyses()) {
+      return false;
+    }
+    const links = this.athlete()?.socialLinks;
+    if (!links) {
+      return false;
+    }
+    return (
+      this.isSafeExternalUrl(links.instagramUrl) ||
+      this.isSafeExternalUrl(links.tiktokUrl) ||
+      this.isSafeExternalUrl(links.youtubeUrl) ||
+      this.isSafeExternalUrl(links.otherPlatformUrl)
+    );
+  });
+
+  public isSafeExternalUrl(url?: string | null): boolean {
+    if (!url) return false;
+    const trimmed = url.trim();
+    return /^https:\/\/[^\s]+$/i.test(trimmed);
+  }
+
   public canRegisterClubAchievement = computed(() => {
     const user = this.authService.currentUser();
     const a = this.athlete();

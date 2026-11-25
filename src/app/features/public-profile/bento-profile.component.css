@@ -242,6 +242,10 @@
   .card-badges {
     grid-column: span 5;
   }
+
+  .card-social-links {
+    grid-column: span 12;
+  }
 }
 
 /* Tarjeta Bento Base */
@@ -761,6 +765,119 @@
   border-radius: 10px;
   font-size: 0.8rem;
   color: var(--color-text-muted, #94A3B8);
+}
+
+/* TARJETA 5 (TS-86): REDES SOCIALES Y PLATAFORMAS DE VIDEO EXTERNO */
+.social-card-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #94A3B8);
+}
+
+.social-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.social-link-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: #0B1222;
+  border: 1px solid #22314D;
+  text-decoration: none;
+  color: #F8FAFC;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.social-link-tile:hover {
+  background: #101A30;
+}
+
+.social-link-tile.tile-instagram:hover {
+  border-color: #EC4899;
+}
+
+.social-link-tile.tile-tiktok:hover {
+  border-color: #38BDF8;
+}
+
+.social-link-tile.tile-youtube:hover {
+  border-color: #EF4444;
+}
+
+.social-link-tile.tile-other:hover {
+  border-color: #10B981;
+}
+
+.social-tile-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.social-tile-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tile-instagram .social-tile-icon {
+  color: #F472B6;
+  background: rgba(236, 72, 153, 0.14);
+}
+
+.tile-tiktok .social-tile-icon {
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.14);
+}
+
+.tile-youtube .social-tile-icon {
+  color: #F87171;
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.tile-other .social-tile-icon {
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.social-tile-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.social-tile-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #F8FAFC;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social-tile-hint {
+  font-size: 0.76rem;
+  color: #94A3B8;
+}
+
+.social-tile-ext {
+  font-size: 0.95rem;
+  color: #64748B;
+  font-weight: 700;
+}
+
+.social-link-tile:hover .social-tile-ext {
+  color: #F8FAFC;
 }
 
 /* BARRA FLOTANTE MÓVIL (WHATSAPP SHARE DOCK) */

@@ -277,5 +277,77 @@ describe('BentoProfileComponent', () => {
     fixture.detectChanges();
     expect(compiled.querySelector('app-scout-technical-analyses')).toBeTruthy();
   });
+
+  it('should hide social links Bento card for anonymous, tutor, athlete and pending scout even if socialLinks exists', () => {
+    component.athlete.set({
+      ...mockAthlete,
+      socialLinks: {
+        instagramUrl: 'https://instagram.com/gabriel10',
+        tiktokUrl: 'https://www.tiktok.com/@gabriel10',
+        youtubeUrl: 'https://youtu.be/xyz123',
+        otherPlatformUrl: 'https://www.hudl.com/profile/10',
+        otherPlatformLabel: 'Hudl'
+      }
+    });
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    fixture.detectChanges();
+    expect(compiled.querySelector('.card-social-links')).toBeNull();
+
+    currentUserSignal.set({ id: 't1', email: 't@test.com', fullName: 'Tutor', role: 'TUTOR' });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.card-social-links')).toBeNull();
+
+    currentUserSignal.set({ id: 'a1', email: 'a@test.com', fullName: 'Atleta', role: 'ATHLETE' });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.card-social-links')).toBeNull();
+
+    currentUserSignal.set({
+      id: 's-pend',
+      email: 'p@test.com',
+      fullName: 'Scout Pendiente',
+      role: 'SCOUT',
+      scoutVerificationStatus: 'PENDING'
+    });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.card-social-links')).toBeNull();
+  });
+
+  it('should render social links Bento card with safe https links for approved scout and admin', () => {
+    component.athlete.set({
+      ...mockAthlete,
+      socialLinks: {
+        instagramUrl: 'https://instagram.com/gabriel10',
+        tiktokUrl: 'https://www.tiktok.com/@gabriel10',
+        youtubeUrl: 'https://youtu.be/xyz123',
+        otherPlatformUrl: 'https://www.hudl.com/profile/10',
+        otherPlatformLabel: 'Hudl'
+      }
+    });
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    currentUserSignal.set({
+      id: 'scout-1',
+      email: 'scout@club.com',
+      fullName: 'Scout Aprobado',
+      role: 'SCOUT',
+      scoutVerificationStatus: 'APPROVED'
+    });
+    fixture.detectChanges();
+
+    const socialCard = compiled.querySelector('.card-social-links');
+    expect(socialCard).toBeTruthy();
+    const links = Array.from(socialCard!.querySelectorAll('a.social-link-tile')) as HTMLAnchorElement[];
+    expect(links.length).toBe(4);
+    expect(links[0].getAttribute('href')).toBe('https://instagram.com/gabriel10');
+    expect(links[0].getAttribute('rel')).toBe('noopener noreferrer');
+    expect(links[0].getAttribute('target')).toBe('_blank');
+    expect(socialCard!.textContent).toContain('Hudl');
+
+    // Empty socialLinks -> hidden even for approved scout
+    component.athlete.set({ ...mockAthlete, socialLinks: null });
+    fixture.detectChanges();
+    expect(compiled.querySelector('.card-social-links')).toBeNull();
+  });
 });
 
